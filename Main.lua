@@ -30,9 +30,7 @@ local executor = (
 local library = {
     windows = {};
     indicators = {};
-    flags = {
-        watermark_enabled = false
-    };
+    flags = {};
     options = {};
     connections = {};
     drawings = {};
@@ -55,13 +53,13 @@ local library = {
         ['ping'] = 0;
     };
     images = {
-        ['gradientp90'] = 'https://raw.githubusercontent.com/portallol/luna/main/modules/gradient90.png';
-        ['gradientp45'] = 'https://raw.githubusercontent.com/portallol/luna/main/modules/gradient45.png';
-        ['colorhue'] = 'https://raw.githubusercontent.com/portallol/luna/main/modules/lgbtqshit.png';
-        ['colortrans'] = 'https://raw.githubusercontent.com/portallol/luna/main/modules/trans.png';
+        ['gradientp90'] = 'https://raw.githubusercontent.com/DrainGangUzi/GUI-Library/refs/heads/main/gradient90.png';
+        ['gradientp45'] = 'https://raw.githubusercontent.com/DrainGangUzi/GUI-Library/refs/heads/main/gradient45.png';
+        ['colorhue'] = 'https://raw.githubusercontent.com/DrainGangUzi/GUI-Library/refs/heads/main/lgbtqshit.png';
+        ['colortrans'] = 'https://raw.githubusercontent.com/DrainGangUzi/GUI-Library/refs/heads/main/trans.png';
     };
     numberStrings = {['Zero'] = 0, ['One'] = 1, ['Two'] = 2, ['Three'] = 3, ['Four'] = 4, ['Five'] = 5, ['Six'] = 6, ['Seven'] = 7, ['Eight'] = 8, ['Nine'] = 9};
-    signal = loadstring(game:HttpGet('https://raw.githubusercontent.com/drillygzzly/Other/main/1414'))();
+    signal = loadstring(game:HttpGet('https://raw.githubusercontent.com/DrainGangUzi/GUI-Library/refs/heads/main/Signal.lua'))();
     open = false;
     opening = false;
     hasInit = false;
@@ -4530,7 +4528,7 @@ function library:init()
         end
     end)
 
-    self.keyIndicator = self.NewIndicator({title = 'Keybinds', pos = newUDim2(0,15,0,325), enabled = false});
+    self.keyIndicator = self.NewIndicator({title = 'Keybinds', pos = newUDim2(0,15,0,325), enabled = true});
     
     self.targetIndicator = self.NewIndicator({title = 'Target Info', pos = newUDim2(0,15,0,350), enabled = false});
     self.targetName = self.targetIndicator:AddValue({key = 'Name     :', value = 'nil'})
