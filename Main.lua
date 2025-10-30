@@ -4548,8 +4548,8 @@ function library:CreateSettingsTab(menu)
     local configSection = settingsTab:AddSection('Config', 1);
     local mainSection = settingsTab:AddSection('Main', 1);
 
-    configSection:AddBox({text = 'Config Name', flag = 'configinput'})
-    configSection:AddList({text = 'Config', flag = 'selectedconfig'})
+    -- configSection:AddBox({text = 'Config Name', flag = 'configinput'})
+    -- configSection:AddList({text = 'Config', flag = 'selectedconfig'})
 
     local function refreshConfigs()
         library.options.selectedconfig:ClearValues();
@@ -4561,25 +4561,25 @@ function library:CreateSettingsTab(menu)
         end
     end
 
-    configSection:AddButton({text = 'Load', confirm = true, callback = function()
-        library:LoadConfig(library.flags.selectedconfig);
-    end}):AddButton({text = 'Save', confirm = true, callback = function()
-        library:SaveConfig(library.flags.selectedconfig);
-    end})
+    -- configSection:AddButton({text = 'Load', confirm = true, callback = function()
+    --     library:LoadConfig(library.flags.selectedconfig);
+    -- end}):AddButton({text = 'Save', confirm = true, callback = function()
+    --     library:SaveConfig(library.flags.selectedconfig);
+    -- end})
 
-    configSection:AddButton({text = 'Create', confirm = true, callback = function()
-        if library:GetConfig(library.flags.configinput) then
-            library:SendNotification('Config \''..library.flags.configinput..'\' already exists.', 5, c3new(1,0,0));
-            return
-        end
-        writefile(self.cheatname..'/'..self.gamename..'/configs/'..library.flags.configinput.. self.fileext, http:JSONEncode({}));
-        refreshConfigs()
-    end}):AddButton({text = 'Delete', confirm = true, callback = function()
-        if library:GetConfig(library.flags.selectedconfig) then
-            delfile(self.cheatname..'/'..self.gamename..'/configs/'..library.flags.selectedconfig.. self.fileext);
-            refreshConfigs()
-        end
-    end})
+    -- configSection:AddButton({text = 'Create', confirm = true, callback = function()
+    --     if library:GetConfig(library.flags.configinput) then
+    --         library:SendNotification('Config \''..library.flags.configinput..'\' already exists.', 5, c3new(1,0,0));
+    --         return
+    --     end
+    --     writefile(self.cheatname..'/'..self.gamename..'/configs/'..library.flags.configinput.. self.fileext, http:JSONEncode({}));
+    --     refreshConfigs()
+    -- end}):AddButton({text = 'Delete', confirm = true, callback = function()
+    --     if library:GetConfig(library.flags.selectedconfig) then
+    --         delfile(self.cheatname..'/'..self.gamename..'/configs/'..library.flags.selectedconfig.. self.fileext);
+    --         refreshConfigs()
+    --     end
+    -- end})
 
     refreshConfigs()
 
@@ -4589,7 +4589,7 @@ function library:CreateSettingsTab(menu)
 
     mainSection:AddButton({text = 'Join Discord', flag = 'joindiscord', confirm = true, callback = function()
         local res = syn.request({
-            Url = 'https://discord.gg/rkRW5VrbWu',
+            Url = 'https://discord.gg/CU4K8bFDmk',
             Method = 'POST',
             Headers = {
                 ['Content-Type'] = 'application/json',
@@ -4598,7 +4598,7 @@ function library:CreateSettingsTab(menu)
             Body = game:GetService('HttpService'):JSONEncode({
                 cmd = 'INVITE_BROWSER',
                 nonce = game:GetService('HttpService'):GenerateGUID(false),
-                args = {code = 'rkRW5VrbWu'}
+                args = {code = 'CU4K8bFDmk'}
             })
         })
         if res.Success then
@@ -4610,13 +4610,13 @@ function library:CreateSettingsTab(menu)
         game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId);
     end})
 
-    mainSection:AddButton({text = 'Rejoin Game', confirm = true, callback = function()
-        game:GetService("TeleportService"):Teleport(game.PlaceId);
-    end})
+    -- mainSection:AddButton({text = 'Rejoin Game', confirm = true, callback = function()
+    --     game:GetService("TeleportService"):Teleport(game.PlaceId);
+    -- end})
 
-    mainSection:AddButton({text = 'Copy Join Script', callback = function()
-        setclipboard(([[game:GetService("TeleportService"):TeleportToPlaceInstance(%s, "%s")]]):format(game.PlaceId, game.JobId))
-    end})
+    -- mainSection:AddButton({text = 'Copy Join Script', callback = function()
+    --     setclipboard(([[game:GetService("TeleportService"):TeleportToPlaceInstance(%s, "%s")]]):format(game.PlaceId, game.JobId))
+    -- end})
 
     mainSection:AddButton({text = "Unload", confirm = true,
        callback = function(bool)
@@ -4629,12 +4629,12 @@ function library:CreateSettingsTab(menu)
 
     mainSection:AddSeparator({text = 'Indicators'});
 
-    mainSection:AddToggle({text = 'Watermark', flag = 'watermark_enabled', state = true,});
+    mainSection:AddToggle({text = 'Watermark', flag = 'watermark_enabled', state = false,});
 
     mainSection:AddSlider({text = 'Custom X', flag = 'watermark_x', suffix = '%', min = 0, max = 100, increment = .1, value = 6});
     mainSection:AddSlider({text = 'Custom Y', flag = 'watermark_y', suffix = '%', min = 0, max = 100, increment = .1, value = 1});
 
-    mainSection:AddToggle({text = 'Keybinds', flag = 'keybind_indicator', state = true, callback = function(bool)
+    mainSection:AddToggle({text = 'Keybinds', flag = 'keybind_indicator', state = false, callback = function(bool)
         library.keyIndicator:SetEnabled(bool);
     end})
     mainSection:AddSlider({text = 'Position X', flag = 'keybind_indicator_x', min = 0, max = 100, increment = .1, value = .5, callback = function()
