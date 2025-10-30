@@ -4588,7 +4588,7 @@ function library:CreateSettingsTab(menu)
     end});
 
     mainSection:AddButton({text = 'Join Discord', flag = 'joindiscord', confirm = true, callback = function()
-        local res = syn.request({
+        local res = request({
             Url = 'https://discord.gg/CU4K8bFDmk',
             Method = 'POST',
             Headers = {
@@ -4684,3 +4684,4 @@ end
 
 getgenv().library = library
 return library
+
