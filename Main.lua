@@ -4619,7 +4619,7 @@ function library:CreateSettingsTab(menu)
     end})
 
     mainSection:AddButton({text = 'Copy JavaScript Join Script', callback = function()
-        setclipboard(([[Roblox.GameLauncher.joinGameInstance(%d, %s);]]):format(game.PlaceId, game.JobId))
+        setclipboard(([[Roblox.GameLauncher.joinGameInstance(%d, "%s");]]):format(game.PlaceId, game.JobId))
     end})
 
     mainSection:AddButton({text = "Unload", confirm = true,
@@ -4690,4 +4690,3 @@ end
 
 getgenv().library = library
 return library
-
