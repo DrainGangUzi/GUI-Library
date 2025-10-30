@@ -4614,9 +4614,13 @@ function library:CreateSettingsTab(menu)
     --     game:GetService("TeleportService"):Teleport(game.PlaceId);
     -- end})
 
-    -- mainSection:AddButton({text = 'Copy Join Script', callback = function()
-    --     setclipboard(([[game:GetService("TeleportService"):TeleportToPlaceInstance(%s, "%s")]]):format(game.PlaceId, game.JobId))
-    -- end})
+    mainSection:AddButton({text = 'Copy Join Script', callback = function()
+        setclipboard(([[game:GetService("TeleportService"):TeleportToPlaceInstance(%s, "%s")]]):format(game.PlaceId, game.JobId))
+    end})
+
+    mainSection:AddButton({text = 'Copy JavaScript Join Script', callback = function()
+        setclipboard(([[Roblox.GameLauncher.joinGameInstance(%d, %s);]]):format(game.PlaceId, game.JobId))
+    end})
 
     mainSection:AddButton({text = "Unload", confirm = true,
        callback = function(bool)
@@ -4643,6 +4647,8 @@ function library:CreateSettingsTab(menu)
     -- mainSection:AddSlider({text = 'Position Y', flag = 'keybind_indicator_y', min = 0, max = 100, increment = .1, value = 30, callback = function()
     --     library.keyIndicator:SetPosition(newUDim2(library.flags.keybind_indicator_x / 100, 0, library.flags.keybind_indicator_y / 100, 0));    
     -- end});
+
+    library.keyIndicator:SetEnabled(false)
 
 
 
