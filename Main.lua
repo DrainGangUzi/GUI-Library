@@ -4551,15 +4551,15 @@ function library:CreateSettingsTab(menu)
     -- configSection:AddBox({text = 'Config Name', flag = 'configinput'})
     -- configSection:AddList({text = 'Config', flag = 'selectedconfig'})
 
-    local function refreshConfigs()
-        library.options.selectedconfig:ClearValues();
-        for _,v in next, listfiles(self.cheatname..'/'..self.gamename..'/configs') do
-            local ext = '.'..v:split('.')[#v:split('.')];
-            if ext == self.fileext then
-                library.options.selectedconfig:AddValue(v:split('\\')[#v:split('\\')]:sub(1,-#ext-1))
-            end
-        end
-    end
+    -- local function refreshConfigs()
+    --     library.options.selectedconfig:ClearValues();
+    --     for _,v in next, listfiles(self.cheatname..'/'..self.gamename..'/configs') do
+    --         local ext = '.'..v:split('.')[#v:split('.')];
+    --         if ext == self.fileext then
+    --             library.options.selectedconfig:AddValue(v:split('\\')[#v:split('\\')]:sub(1,-#ext-1))
+    --         end
+    --     end
+    -- end
 
     -- configSection:AddButton({text = 'Load', confirm = true, callback = function()
     --     library:LoadConfig(library.flags.selectedconfig);
@@ -4581,7 +4581,7 @@ function library:CreateSettingsTab(menu)
     --     end
     -- end})
 
-    refreshConfigs()
+    --refreshConfigs()
 
     mainSection:AddBind({text = 'Open / Close', flag = 'togglebind', nomouse = true, noindicator = true, bind = Enum.KeyCode.End, callback = function()
         library:SetOpen(not library.open)
