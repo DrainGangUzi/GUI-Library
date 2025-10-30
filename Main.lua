@@ -4618,10 +4618,6 @@ function library:CreateSettingsTab(menu)
         setclipboard(([[game:GetService("TeleportService"):TeleportToPlaceInstance(%s, "%s")]]):format(game.PlaceId, game.JobId))
     end})
 
-    mainSection:AddButton({text = 'Copy JavaScript Join Script', callback = function()
-        setclipboard(([[Roblox.GameLauncher.joinGameInstance(%d, "%s");]]):format(game.PlaceId, game.JobId))
-    end})
-
     mainSection:AddButton({text = "Unload", confirm = true,
        callback = function(bool)
            if bool then
