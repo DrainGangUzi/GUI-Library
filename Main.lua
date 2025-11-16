@@ -20,6 +20,12 @@ local setByConfig = false
 local floor, ceil, huge, pi, clamp = math.floor, math.ceil, math.huge, math.pi, math.clamp
 local c3new, fromrgb, fromhsv = Color3.new, Color3.fromRGB, Color3.fromHSV
 local next, newInstance, newUDim2, newVector2 = next, Instance.new, UDim2.new, Vector2.new
+local isexecutorclosure = isexecutorclosure or is_synapse_function or is_sirhurt_closure or iskrnlclosure;
+local executor = (
+    syn and 'syn' or
+    getexecutorname and getexecutorname() or
+    'unknown'
+)
 
 local library = {
     windows = {};
@@ -27,6 +33,7 @@ local library = {
     flags = {};
     options = {};
     connections = {};
+    drawings = {};
     instances = {};
     utility = {};
     notifications = {};
@@ -254,7 +261,7 @@ do
 
     function utility:GetHoverObject()
         local objects = {}
-        for i,v in next, library.MyOwnGames do
+        for i,v in next, library.drawings do
             if v.Object.Visible and v.Class == 'Square' and self:MouseOver(v.Object) then
                 table.insert(objects,v.Object)
             end
@@ -267,6 +274,8 @@ do
 
     function utility:Draw(class, properties)
         local blacklistedProperties = {'Object','Children','Class'}
+        local drawing = {
+            Object = Drawing.new(class);
             Children = {};
             ThemeColor = '';
             OutlineThemeColor = '';
@@ -288,9 +297,9 @@ do
             Class = class;
         }
 
-        function MyOwnGame:Update()
-            -- if MyOwnGame.Parent then
-                local parent = MyOwnGame.Parent ~= nil and library.MyOwnGames[MyOwnGame.Parent.Object] or nil
+        function drawing:Update()
+            -- if drawing.Parent then
+                local parent = drawing.Parent ~= nil and library.drawings[drawing.Parent.Object] or nil
                 local parentSize,parentPos,parentVis = workspace.CurrentCamera.ViewportSize, Vector2.new(0,0), true;
                 if parent ~= nil then
                     parentSize = (parent.Class == 'Square' or parent.Class == 'Image') and parent.Object.Size or parent.Class == 'Text' and parent.TextBounds or workspace.CurrentCamera.ViewportSize
@@ -298,27 +307,27 @@ do
                     parentVis = parent.Object.Visible
                 end
 
-                if MyOwnGame.Class == 'Square' or MyOwnGame.Class == 'Image' then
-                    MyOwnGame.Object.Size = typeof(MyOwnGame.Size) == 'Vector2' and MyOwnGame.Size or typeof(MyOwnGame.Size) == 'UDim2' and utility:UDim2ToVector2(MyOwnGame.Size,parentSize)
+                if drawing.Class == 'Square' or drawing.Class == 'Image' then
+                    drawing.Object.Size = typeof(drawing.Size) == 'Vector2' and drawing.Size or typeof(drawing.Size) == 'UDim2' and utility:UDim2ToVector2(drawing.Size,parentSize)
                 end
 
-                if MyOwnGame.Class == 'Square' or MyOwnGame.Class == 'Image' or MyOwnGame.Class == 'Circle' or MyOwnGame.Class == 'Text' then
-                    MyOwnGame.Object.Position = parentPos + (typeof(MyOwnGame.Position) == 'Vector2' and MyOwnGame.Position or utility:UDim2ToVector2(MyOwnGame.Position,parentSize))
+                if drawing.Class == 'Square' or drawing.Class == 'Image' or drawing.Class == 'Circle' or drawing.Class == 'Text' then
+                    drawing.Object.Position = parentPos + (typeof(drawing.Position) == 'Vector2' and drawing.Position or utility:UDim2ToVector2(drawing.Position,parentSize))
                 end
 
-                MyOwnGame.Object.Visible = (parentVis and MyOwnGame.Visible) and true or false
+                drawing.Object.Visible = (parentVis and drawing.Visible) and true or false
 
             -- end
-            MyOwnGame:UpdateChildren()
+            drawing:UpdateChildren()
         end
 
-        function MyOwnGame:UpdateChildren()
-            for i,v in next, MyOwnGame.Children do
+        function drawing:UpdateChildren()
+            for i,v in next, drawing.Children do
                 v:Update()
             end
         end
 
-        function MyOwnGame:GetDescendants()
+        function drawing:GetDescendants()
             local descendants = {};
             local function a(t)
                 for _,v in next, t.Children do
@@ -330,46 +339,46 @@ do
             return descendants;
         end
 
-        library.MyOwnGames[MyOwnGame.Object] = MyOwnGame
+        library.drawings[drawing.Object] = drawing
 
         -- this is really stupid lol
         local proxy = utility:DetectTableChange(
         function(obj,i)
-            return MyOwnGame[i] == nil and MyOwnGame.Object[i] or MyOwnGame[i]
+            return drawing[i] == nil and drawing.Object[i] or drawing[i]
         end,
         function(obj,i,v)
             if not table.find(blacklistedProperties,i) then
 
-                local lastval = MyOwnGame[i]
+                local lastval = drawing[i]
 
                 if i == 'Size' and (class == 'Square' or class == 'Image') then
-                    MyOwnGame.Object.Size = utility:UDim2ToVector2(v,MyOwnGame.Parent == nil and workspace.CurrentCamera.ViewportSize or MyOwnGame.Parent.Object.Size);
-                    MyOwnGame.AbsoluteSize = MyOwnGame.Object.Size;
+                    drawing.Object.Size = utility:UDim2ToVector2(v,drawing.Parent == nil and workspace.CurrentCamera.ViewportSize or drawing.Parent.Object.Size);
+                    drawing.AbsoluteSize = drawing.Object.Size;
                 elseif i == 'Position' and (class == 'Square' or class == 'Image' or class == 'Text') then
-                    MyOwnGame.Object.Position =  utility:UDim2ToVector2(v,MyOwnGame.Parent == nil and newVector2(0,0) or MyOwnGame.Parent.Object.Position);
-                    MyOwnGame.AbsolutePosition = MyOwnGame.Object.Position;
+                    drawing.Object.Position =  utility:UDim2ToVector2(v,drawing.Parent == nil and newVector2(0,0) or drawing.Parent.Object.Position);
+                    drawing.AbsolutePosition = drawing.Object.Position;
                 elseif i == 'Parent' then
-                    if MyOwnGame.Parent ~= nil then
-                        MyOwnGame.Parent.Children[MyOwnGame] = nil
+                    if drawing.Parent ~= nil then
+                        drawing.Parent.Children[drawing] = nil
                     end
                     if v ~= nil then
-                        table.insert(v.Children,MyOwnGame)
+                        table.insert(v.Children,drawing)
                     end
                 elseif i == 'Visible' then
-                    MyOwnGame.Visible = v
+                    drawing.Visible = v
                 elseif i == 'Font' and v == 2 and executor == 'ScriptWare' then
                     v = 1
                 end
 
                 pcall(function()
-                    MyOwnGame.Object[i] = v
+                    drawing.Object[i] = v
                 end)
-                if MyOwnGame[i] ~= nil or i == 'Parent' then
-                    MyOwnGame[i] = v
+                if drawing[i] ~= nil or i == 'Parent' then
+                    drawing[i] = v
                 end
 
                 if table.find({'Size','Position','Position','Visible','Parent'},i) then
-                    MyOwnGame:Update()
+                    drawing:Update()
                 end
                 if table.find({'ThemeColor','OutlineThemeColor','ThemeColorOffset','OutlineThemeColorOffset'},i) and lastval ~= v then
                     library.UpdateThemeColors()
@@ -378,18 +387,18 @@ do
             end
         end)
 
-        function MyOwnGame:Remove()
+        function drawing:Remove()
             for i,v in next, self.Children do
                 v:Remove();
             end
 
-            if MyOwnGame.Parent then
-                MyOwnGame.Parent.Children[MyOwnGame.Object] = nil;
+            if drawing.Parent then
+                drawing.Parent.Children[drawing.Object] = nil;
             end
 
-            library.MyOwnGames[MyOwnGame.Object] = nil;
-            MyOwnGame.Object:Remove();
-            table.clear(MyOwnGame);
+            library.drawings[drawing.Object] = nil;
+            drawing.Object:Remove();
+            table.clear(drawing);
 
         end
 
@@ -407,7 +416,7 @@ do
             proxy[i] = v
         end
 
-        MyOwnGame:Update()
+        drawing:Update()
         return proxy
     end
 end
@@ -419,10 +428,10 @@ function library:Unload()
     for _,c in next, self.connections do
         c:Disconnect()
     end
-    for obj in next, self.MyOwnGames do
+    for obj in next, self.drawings do
         obj:Remove()
     end
-    table.clear(self.MyOwnGames)
+    table.clear(self.drawings)
     getgenv().library = nil
 end
 
@@ -579,7 +588,7 @@ function library:init()
             end
             if library.open then
                 local hoverObj = utility:GetHoverObject();
-                local hoverObjData = library.MyOwnGames[hoverObj];
+                local hoverObjData = library.drawings[hoverObj];
                 if input.UserInputType == Enum.UserInputType.MouseButton1 then
                     mb1down = true;
                     button1down:Fire()
@@ -606,7 +615,7 @@ function library:init()
     utility:Connection(inputservice.InputEnded, function(input, gpe)
         if self.hasInit and library.open then
             local hoverObj = utility:GetHoverObject();
-            local hoverObjData = library.MyOwnGames[hoverObj];
+            local hoverObjData = library.drawings[hoverObj];
 
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
                 mb1down = false;
@@ -635,7 +644,7 @@ function library:init()
                 end
 
                 local hoverObj = utility:GetHoverObject();
-                for _,v in next, library.MyOwnGames do
+                for _,v in next, library.drawings do
                     local hover = hoverObj == v.Object;
                     if hover and not v.Hover then
                         v.Hover = true;
@@ -687,7 +696,7 @@ function library:init()
     end
 
     function self.UpdateThemeColors()
-        for _,v in next, library.MyOwnGames do
+        for _,v in next, library.drawings do
             if v.ThemeColor and library.theme[v.ThemeColor] then
                 v.Object.Color = utility:AddRGB(library.theme[v.ThemeColor],fromrgb(v.ThemeColorOffset,v.ThemeColorOffset,v.ThemeColorOffset))
             end
@@ -1614,9 +1623,9 @@ function library:init()
 
             end
 
-           function window.dropdown:Refresh()
-    if self.selected ~= nil then
-        local list = self.selected
+            function window.dropdown:Refresh()
+            if self.selected ~= nil then
+            local list = self.selected
 
         -- parent where values should go
         local parent = self.objects.valuesHolder
