@@ -577,59 +577,62 @@ function library:init()
     end)
 
     utility:Connection(inputservice.InputBegan, function(input, gpe)
-        if self.hasInit then
-            if input.KeyCode == self.toggleKey and not library.opening and not gpe then
-                self:SetOpen(not self.open)
-                task.spawn(function()
-                    library.opening = true;
-                    task.wait(.15);
-                    library.opening = false;
-                end)
-            end
-            if library.open then
-                local hoverObj = utility:GetHoverObject();
-                local hoverObjData = library.drawings[hoverObj];
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    mb1down = true;
-                    button1down:Fire()
-                    if hoverObj and hoverObjData then
-                        hoverObjData.MouseButton1Down:Fire(inputservice:GetMouseLocation())
-                    end
-
-                    -- // Update Sliders Click
-                    if library.draggingSlider ~= nil then
-                        local rel = inputservice:GetMouseLocation() - library.draggingSlider.objects.background.Object.Position;
-                        local val = utility:ConvertNumberRange(rel.X, 0 , library.draggingSlider.objects.background.Object.Size.X, library.draggingSlider.min, library.draggingSlider.max);
-                        library.draggingSlider:SetValue(val)
-                    end
-
-                elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
-                    if hoverObj and hoverObjData then
-                        hoverObjData.MouseButton2Down:Fire(inputservice:GetMouseLocation())
-                    end
-                end
-            end
+    if self.hasInit then
+        -- toggle key for opening/closing menu
+        if input.KeyCode == self.toggleKey and not library.opening and not gpe then
+            self:SetOpen(not self.open)
+            task.spawn(function()
+                library.opening = true;
+                task.wait(.15);
+                library.opening = false;
+            end)
         end
-    end)
 
-    utility:Connection(inputservice.InputEnded, function(input, gpe)
-        if self.hasInit and library.open then
+        if library.open then
             local hoverObj = utility:GetHoverObject();
             local hoverObjData = library.drawings[hoverObj];
 
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                mb1down = false;
-                button1up:Fire();
+                mb1down = true;
+                button1down:Fire()
                 if hoverObj and hoverObjData then
-                    hoverObjData.MouseButton1Up:Fire(inputservice:GetMouseLocation())
+                    hoverObjData.MouseButton1Down:Fire(inputservice:GetMouseLocation())
                 end
+
+                -- // Update Sliders Click
+                if library.draggingSlider ~= nil then
+                    local rel = inputservice:GetMouseLocation() - library.draggingSlider.objects.background.Object.Position;
+                    local val = utility:ConvertNumberRange(rel.X, 0 , library.draggingSlider.objects.background.Object.Size.X, library.draggingSlider.min, library.draggingSlider.max);
+                    library.draggingSlider:SetValue(val)
+                end
+
             elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
                 if hoverObj and hoverObjData then
-                    hoverObjData.MouseButton2Up:Fire(inputservice:GetMouseLocation())
+                    hoverObjData.MouseButton2Down:Fire(inputservice:GetMouseLocation())
                 end
             end
         end
-    end)
+    end
+
+    -- 🔽 NEW: scroll wheel for dropdown
+    if input.UserInputType == Enum.UserInputType.MouseWheel and library.open then
+        for _, win in next, library.windows do
+            local dd = win.dropdown
+            if dd and dd.selected and dd.objects and dd.objects.background.Visible then
+                -- only scroll if mouse is over this dropdown
+                if utility:MouseOver(dd.objects.background.Object) then
+                    local maxScroll = dd.maxScroll or 0
+                    if maxScroll > 0 then
+                        local dir = input.Position.Z  -- +1 or -1
+                        dd.scrollOffset = clamp((dd.scrollOffset or 0) - dir * 18, 0, maxScroll)
+                        dd:Refresh()
+                    end
+                    break
+                end
+            end
+        end
+    end
+end)
 
     utility:Connection(inputservice.InputChanged, function(input, gpe)
         if input.UserInputType == Enum.UserInputType.MouseMovement then
