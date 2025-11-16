@@ -20,12 +20,6 @@ local setByConfig = false
 local floor, ceil, huge, pi, clamp = math.floor, math.ceil, math.huge, math.pi, math.clamp
 local c3new, fromrgb, fromhsv = Color3.new, Color3.fromRGB, Color3.fromHSV
 local next, newInstance, newUDim2, newVector2 = next, Instance.new, UDim2.new, Vector2.new
-local isexecutorclosure = isexecutorclosure or is_synapse_function or is_sirhurt_closure or iskrnlclosure;
-local executor = (
-    syn and 'syn' or
-    getexecutorname and getexecutorname() or
-    'unknown'
-)
 
 local library = {
     windows = {};
@@ -33,7 +27,6 @@ local library = {
     flags = {};
     options = {};
     connections = {};
-    drawings = {};
     instances = {};
     utility = {};
     notifications = {};
@@ -261,7 +254,7 @@ do
 
     function utility:GetHoverObject()
         local objects = {}
-        for i,v in next, library.drawings do
+        for i,v in next, library.MyOwnGames do
             if v.Object.Visible and v.Class == 'Square' and self:MouseOver(v.Object) then
                 table.insert(objects,v.Object)
             end
@@ -274,8 +267,6 @@ do
 
     function utility:Draw(class, properties)
         local blacklistedProperties = {'Object','Children','Class'}
-        local drawing = {
-            Object = Drawing.new(class);
             Children = {};
             ThemeColor = '';
             OutlineThemeColor = '';
@@ -297,9 +288,9 @@ do
             Class = class;
         }
 
-        function drawing:Update()
-            -- if drawing.Parent then
-                local parent = drawing.Parent ~= nil and library.drawings[drawing.Parent.Object] or nil
+        function MyOwnGame:Update()
+            -- if MyOwnGame.Parent then
+                local parent = MyOwnGame.Parent ~= nil and library.MyOwnGames[MyOwnGame.Parent.Object] or nil
                 local parentSize,parentPos,parentVis = workspace.CurrentCamera.ViewportSize, Vector2.new(0,0), true;
                 if parent ~= nil then
                     parentSize = (parent.Class == 'Square' or parent.Class == 'Image') and parent.Object.Size or parent.Class == 'Text' and parent.TextBounds or workspace.CurrentCamera.ViewportSize
@@ -307,27 +298,27 @@ do
                     parentVis = parent.Object.Visible
                 end
 
-                if drawing.Class == 'Square' or drawing.Class == 'Image' then
-                    drawing.Object.Size = typeof(drawing.Size) == 'Vector2' and drawing.Size or typeof(drawing.Size) == 'UDim2' and utility:UDim2ToVector2(drawing.Size,parentSize)
+                if MyOwnGame.Class == 'Square' or MyOwnGame.Class == 'Image' then
+                    MyOwnGame.Object.Size = typeof(MyOwnGame.Size) == 'Vector2' and MyOwnGame.Size or typeof(MyOwnGame.Size) == 'UDim2' and utility:UDim2ToVector2(MyOwnGame.Size,parentSize)
                 end
 
-                if drawing.Class == 'Square' or drawing.Class == 'Image' or drawing.Class == 'Circle' or drawing.Class == 'Text' then
-                    drawing.Object.Position = parentPos + (typeof(drawing.Position) == 'Vector2' and drawing.Position or utility:UDim2ToVector2(drawing.Position,parentSize))
+                if MyOwnGame.Class == 'Square' or MyOwnGame.Class == 'Image' or MyOwnGame.Class == 'Circle' or MyOwnGame.Class == 'Text' then
+                    MyOwnGame.Object.Position = parentPos + (typeof(MyOwnGame.Position) == 'Vector2' and MyOwnGame.Position or utility:UDim2ToVector2(MyOwnGame.Position,parentSize))
                 end
 
-                drawing.Object.Visible = (parentVis and drawing.Visible) and true or false
+                MyOwnGame.Object.Visible = (parentVis and MyOwnGame.Visible) and true or false
 
             -- end
-            drawing:UpdateChildren()
+            MyOwnGame:UpdateChildren()
         end
 
-        function drawing:UpdateChildren()
-            for i,v in next, drawing.Children do
+        function MyOwnGame:UpdateChildren()
+            for i,v in next, MyOwnGame.Children do
                 v:Update()
             end
         end
 
-        function drawing:GetDescendants()
+        function MyOwnGame:GetDescendants()
             local descendants = {};
             local function a(t)
                 for _,v in next, t.Children do
@@ -339,46 +330,46 @@ do
             return descendants;
         end
 
-        library.drawings[drawing.Object] = drawing
+        library.MyOwnGames[MyOwnGame.Object] = MyOwnGame
 
         -- this is really stupid lol
         local proxy = utility:DetectTableChange(
         function(obj,i)
-            return drawing[i] == nil and drawing.Object[i] or drawing[i]
+            return MyOwnGame[i] == nil and MyOwnGame.Object[i] or MyOwnGame[i]
         end,
         function(obj,i,v)
             if not table.find(blacklistedProperties,i) then
 
-                local lastval = drawing[i]
+                local lastval = MyOwnGame[i]
 
                 if i == 'Size' and (class == 'Square' or class == 'Image') then
-                    drawing.Object.Size = utility:UDim2ToVector2(v,drawing.Parent == nil and workspace.CurrentCamera.ViewportSize or drawing.Parent.Object.Size);
-                    drawing.AbsoluteSize = drawing.Object.Size;
+                    MyOwnGame.Object.Size = utility:UDim2ToVector2(v,MyOwnGame.Parent == nil and workspace.CurrentCamera.ViewportSize or MyOwnGame.Parent.Object.Size);
+                    MyOwnGame.AbsoluteSize = MyOwnGame.Object.Size;
                 elseif i == 'Position' and (class == 'Square' or class == 'Image' or class == 'Text') then
-                    drawing.Object.Position =  utility:UDim2ToVector2(v,drawing.Parent == nil and newVector2(0,0) or drawing.Parent.Object.Position);
-                    drawing.AbsolutePosition = drawing.Object.Position;
+                    MyOwnGame.Object.Position =  utility:UDim2ToVector2(v,MyOwnGame.Parent == nil and newVector2(0,0) or MyOwnGame.Parent.Object.Position);
+                    MyOwnGame.AbsolutePosition = MyOwnGame.Object.Position;
                 elseif i == 'Parent' then
-                    if drawing.Parent ~= nil then
-                        drawing.Parent.Children[drawing] = nil
+                    if MyOwnGame.Parent ~= nil then
+                        MyOwnGame.Parent.Children[MyOwnGame] = nil
                     end
                     if v ~= nil then
-                        table.insert(v.Children,drawing)
+                        table.insert(v.Children,MyOwnGame)
                     end
                 elseif i == 'Visible' then
-                    drawing.Visible = v
+                    MyOwnGame.Visible = v
                 elseif i == 'Font' and v == 2 and executor == 'ScriptWare' then
                     v = 1
                 end
 
                 pcall(function()
-                    drawing.Object[i] = v
+                    MyOwnGame.Object[i] = v
                 end)
-                if drawing[i] ~= nil or i == 'Parent' then
-                    drawing[i] = v
+                if MyOwnGame[i] ~= nil or i == 'Parent' then
+                    MyOwnGame[i] = v
                 end
 
                 if table.find({'Size','Position','Position','Visible','Parent'},i) then
-                    drawing:Update()
+                    MyOwnGame:Update()
                 end
                 if table.find({'ThemeColor','OutlineThemeColor','ThemeColorOffset','OutlineThemeColorOffset'},i) and lastval ~= v then
                     library.UpdateThemeColors()
@@ -387,18 +378,18 @@ do
             end
         end)
 
-        function drawing:Remove()
+        function MyOwnGame:Remove()
             for i,v in next, self.Children do
                 v:Remove();
             end
 
-            if drawing.Parent then
-                drawing.Parent.Children[drawing.Object] = nil;
+            if MyOwnGame.Parent then
+                MyOwnGame.Parent.Children[MyOwnGame.Object] = nil;
             end
 
-            library.drawings[drawing.Object] = nil;
-            drawing.Object:Remove();
-            table.clear(drawing);
+            library.MyOwnGames[MyOwnGame.Object] = nil;
+            MyOwnGame.Object:Remove();
+            table.clear(MyOwnGame);
 
         end
 
@@ -416,7 +407,7 @@ do
             proxy[i] = v
         end
 
-        drawing:Update()
+        MyOwnGame:Update()
         return proxy
     end
 end
@@ -428,10 +419,10 @@ function library:Unload()
     for _,c in next, self.connections do
         c:Disconnect()
     end
-    for obj in next, self.drawings do
+    for obj in next, self.MyOwnGames do
         obj:Remove()
     end
-    table.clear(self.drawings)
+    table.clear(self.MyOwnGames)
     getgenv().library = nil
 end
 
@@ -588,7 +579,7 @@ function library:init()
             end
             if library.open then
                 local hoverObj = utility:GetHoverObject();
-                local hoverObjData = library.drawings[hoverObj];
+                local hoverObjData = library.MyOwnGames[hoverObj];
                 if input.UserInputType == Enum.UserInputType.MouseButton1 then
                     mb1down = true;
                     button1down:Fire()
@@ -615,7 +606,7 @@ function library:init()
     utility:Connection(inputservice.InputEnded, function(input, gpe)
         if self.hasInit and library.open then
             local hoverObj = utility:GetHoverObject();
-            local hoverObjData = library.drawings[hoverObj];
+            local hoverObjData = library.MyOwnGames[hoverObj];
 
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
                 mb1down = false;
@@ -644,7 +635,7 @@ function library:init()
                 end
 
                 local hoverObj = utility:GetHoverObject();
-                for _,v in next, library.drawings do
+                for _,v in next, library.MyOwnGames do
                     local hover = hoverObj == v.Object;
                     if hover and not v.Hover then
                         v.Hover = true;
@@ -696,7 +687,7 @@ function library:init()
     end
 
     function self.UpdateThemeColors()
-        for _,v in next, library.drawings do
+        for _,v in next, library.MyOwnGames do
             if v.ThemeColor and library.theme[v.ThemeColor] then
                 v.Object.Color = utility:AddRGB(library.theme[v.ThemeColor],fromrgb(v.ThemeColorOffset,v.ThemeColorOffset,v.ThemeColorOffset))
             end
@@ -1623,91 +1614,110 @@ function library:init()
 
             end
 
-            function window.dropdown:Refresh()
-                if self.selected ~= nil then
-                    local list = self.selected
-                    for idx, value in next, list.values do
-                        local valueObject = self.objects.values[idx]
-                        if valueObject == nil then
-                            valueObject = {};
-                            valueObject.background = utility:Draw('Square', {
-                                Size = newUDim2(1,-4,0,18);
-                                Color = Color3.new(.25,.25,.25);
-                                Transparency = 0;
-                                ZIndex = library.zindexOrder.dropdown+1;
-                                Parent = self.objects.background;
-                            })
-                            valueObject.text = utility:Draw('Text', {
-                                Position = newUDim2(0,3,0,1);
-                                ThemeColor = 'Option Text 2';
-                                Text = tostring(value);
-                                Size = 13;
-                                Font = 2;
-                                ZIndex = library.zindexOrder.dropdown+2;
-                                Parent = valueObject.background;
-                            })
-                            valueObject.connection = utility:Connection(valueObject.background.MouseButton1Down, function()
-                                local currentList = self.selected
-                                if currentList then
-                                    local val = currentList.values[idx]
-                                    local currentSelected = currentList.selected;
-                                    local newSelected = currentList.multi and {} or val;
-                                    
-                                    if currentList.multi then
-                                        for i,v in next, currentSelected do
-                                            if v == "none" then continue end
-                                            newSelected[i] = v;
-                                        end
-                                        if table.find(newSelected, val) then
-                                            table.remove(newSelected, table.find(newSelected, val));
-                                        else
-                                            table.insert(newSelected, val)
-                                        end
-                                    end
+           function window.dropdown:Refresh()
+    if self.selected ~= nil then
+        local list = self.selected
 
-                                    currentList:Select(newSelected);
-                                    if not currentList.multi then
-                                        currentList.open = false;
-                                        currentList.objects.openText.Text = '+';
-                                        window.dropdown.selected = nil;
-                                        window.dropdown.objects.background.Visible = false;
-                                    end
+        -- parent where values should go
+        local parent = self.objects.valuesHolder
 
-                                    for idx, val in next, currentList.values do
-                                        local valueObj = self.objects.values[idx]
-                                        if valueObj then
-                                            valueObj.background.Transparency = (typeof(newSelected) == 'table' and table.find(newSelected, val) or newSelected == val) and 1 or 0
-                                        end
-                                    end
+        for idx, value in next, list.values do
+            local valueObject = self.objects.values[idx]
+            if valueObject == nil then
+                valueObject = {}
+                valueObject.background = utility:Draw("Square", {
+                    Size = newUDim2(1,-4,0,18),
+                    Color = Color3.new(.25,.25,.25),
+                    Transparency = 0,
+                    ZIndex = library.zindexOrder.dropdown+1,
+                    Parent = parent,
+                })
+                valueObject.text = utility:Draw("Text", {
+                    Position = newUDim2(0,3,0,1),
+                    ThemeColor = "Option Text 2",
+                    Text = tostring(value),
+                    Size = 13,
+                    Font = 2,
+                    ZIndex = library.zindexOrder.dropdown+2,
+                    Parent = valueObject.background,
+                })
+                valueObject.connection = utility:Connection(
+                    valueObject.background.MouseButton1Down,
+                    function()
+                        local currentList = self.selected
+                        if currentList then
+                            local val = currentList.values[idx]
+                            local currentSelected = currentList.selected
+                            local newSelected = currentList.multi and {} or val
 
+                            if currentList.multi then
+                                for i, v in next, currentSelected do
+                                    if v ~= "none" then
+                                        newSelected[i] = v
+                                    end
                                 end
-                            end)
-                            self.objects.values[idx] = valueObject
+                                if table.find(newSelected, val) then
+                                    table.remove(newSelected, table.find(newSelected, val))
+                                else
+                                    table.insert(newSelected, val)
+                                end
+                            end
+
+                            currentList:Select(newSelected)
+                            if not currentList.multi then
+                                currentList.open = false
+                                currentList.objects.openText.Text = "+"
+                                window.dropdown.selected = nil
+                                window.dropdown.objects.background.Visible = false
+                            end
+
+                            for idx2, val2 in next, currentList.values do
+                                local obj = self.objects.values[idx2]
+                                if obj then
+                                    obj.background.Transparency =
+                                        ((typeof(newSelected) == "table" and table.find(newSelected, val2))
+                                            or newSelected == val2) and 1 or 0
+                                end
+                            end
                         end
                     end
+                )
 
-                    for idx, val in next, list.values do
-                        local valueObj = self.objects.values[idx]
-                        if valueObj then
-                            valueObj.background.Transparency = (typeof(list.selected) == 'table' and table.find(list.selected, val) or list.selected == val) and 1 or 0
-                        end
-                    end
-
-                    local y,padding = 2,2
-                    for idx, obj in next, self.objects.values do
-                        local valueStr = list.values[idx]
-                        obj.background.Visible = valueStr ~= nil
-                        if valueStr ~= nil then
-                            obj.background.Position = newUDim2(0,2,0,y);
-                            obj.text.Text = valueStr;
-                            y = y + obj.background.Object.Size.Y + padding;
-                        end
-                    end
-
-                    self.objects.background.Size = newUDim2(1,-6,0,y);    
-
-                end
+                self.objects.values[idx] = valueObject
             end
+        end
+
+        for idx, val in next, list.values do
+            local valueObj = self.objects.values[idx]
+            if valueObj then
+                valueObj.background.Transparency =
+                    ((typeof(list.selected) == "table" and table.find(list.selected, val))
+                        or list.selected == val) and 1 or 0
+            end
+        end
+
+        -- layout
+        local y, padding = 2, 2
+        for idx, obj in next, self.objects.values do
+            local str = list.values[idx]
+            obj.background.Visible = (str ~= nil)
+            if str ~= nil then
+                obj.background.Position = newUDim2(0, 2, 0, y)
+                obj.text.Text = str
+                y = y + obj.background.Object.Size.Y + padding
+            end
+        end
+
+        -- resize holders
+        self.objects.valuesHolder.Size = newUDim2(1, 0, 0, y)
+
+        -- clamp dropdown max height
+        local maxHeight = 150
+        local finalHeight = math.min(y, maxHeight)
+        self.objects.background.Size = newUDim2(1,-6,0,finalHeight)
+    end
+end
+
         
             window.dropdown:Refresh();
         end
@@ -4686,4 +4696,3 @@ end
 
 getgenv().library = library
 return library
-
