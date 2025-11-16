@@ -577,69 +577,40 @@ function library:init()
     end)
 
     utility:Connection(inputservice.InputBegan, function(input, gpe)
-    if self.hasInit then
-        
-        -- Toggle GUI
-        if input.KeyCode == self.toggleKey and not library.opening and not gpe then
-            self:SetOpen(not self.open)
-            task.spawn(function()
-                library.opening = true
-                task.wait(.15)
-                library.opening = false
-            end)
-        end
+        if self.hasInit then
+            if input.KeyCode == self.toggleKey and not library.opening and not gpe then
+                self:SetOpen(not self.open)
+                task.spawn(function()
+                    library.opening = true;
+                    task.wait(.15);
+                    library.opening = false;
+                end)
+            end
+            if library.open then
+                local hoverObj = utility:GetHoverObject();
+                local hoverObjData = library.drawings[hoverObj];
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    mb1down = true;
+                    button1down:Fire()
+                    if hoverObj and hoverObjData then
+                        hoverObjData.MouseButton1Down:Fire(inputservice:GetMouseLocation())
+                    end
 
-        -- GUI open logic
-        if library.open then
+                    -- // Update Sliders Click
+                    if library.draggingSlider ~= nil then
+                        local rel = inputservice:GetMouseLocation() - library.draggingSlider.objects.background.Object.Position;
+                        local val = utility:ConvertNumberRange(rel.X, 0 , library.draggingSlider.objects.background.Object.Size.X, library.draggingSlider.min, library.draggingSlider.max);
+                        library.draggingSlider:SetValue(val)
+                    end
 
-            -----------------------------------------
-            -- 🚨 SCROLL SUPPORT FOR DROPDOWN 🚨
-            -----------------------------------------
-            if window.dropdown and window.dropdown.selected ~= nil then
-                if input.UserInputType == Enum.UserInputType.MouseWheel then
-                    local list = window.dropdown.selected
-                    local bg = window.dropdown.objects.background
-
-                    -- scroll amount (you can increase/decrease)
-                    local scrollStep = 18 -- height of 1 item
-
-                    -- update scroll offset
-                    window.dropdown.scrollOffset = (window.dropdown.scrollOffset or 0) + 
-                        (input.Position.Z > 0 and scrollStep or -scrollStep)
-
-                    -- clamp scroll so it doesn’t scroll too far
-                    window.dropdown.scrollOffset = math.clamp(
-                        window.dropdown.scrollOffset,
-                        -(#list.values * scrollStep) + 60, -- down limit
-                        0 -- up limit
-                    )
-
-                    -- apply scroll movement
-                    bg.Position = UDim2.new(0, 3, 1, window.dropdown.scrollOffset)
+                elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+                    if hoverObj and hoverObjData then
+                        hoverObjData.MouseButton2Down:Fire(inputservice:GetMouseLocation())
+                    end
                 end
             end
-            -----------------------------------------
-
-            -- Hover + clicking
-            local hoverObj = utility:GetHoverObject()
-            local hoverObjData = library.drawings[hoverObj]
-
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                mb1down = true
-                button1down:Fire()
-                if hoverObj and hoverObjData then
-                    hoverObjData.MouseButton1Down:Fire(inputservice:GetMouseLocation())
-                end
-
-            elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
-                if hoverObj and hoverObjData then
-                    hoverObjData.MouseButton2Down:Fire(inputservice:GetMouseLocation())
-                end
-            end
-
         end
-    end
-end)
+    end)
 
     utility:Connection(inputservice.InputEnded, function(input, gpe)
         if self.hasInit and library.open then
