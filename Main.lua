@@ -1623,108 +1623,170 @@ function library:init()
 
             end
 
-            function window.dropdown:Refresh()
-            if self.selected ~= nil then
-            local list = self.selected
+          function window.dropdown:Refresh()
+    if not self.selected then return end
 
-        -- parent where values should go
-        local parent = self.objects.valuesHolder
+    local list = self.selected
+    local objs = self.objects
 
-        for idx, value in next, list.values do
-            local valueObject = self.objects.values[idx]
-            if valueObject == nil then
-                valueObject = {}
-                valueObject.background = utility:Draw("Square", {
-                    Size = newUDim2(1,-4,0,18),
-                    Color = Color3.new(.25,.25,.25),
-                    Transparency = 0,
-                    ZIndex = library.zindexOrder.dropdown+1,
-                    Parent = parent,
-                })
-                valueObject.text = utility:Draw("Text", {
-                    Position = newUDim2(0,3,0,1),
-                    ThemeColor = "Option Text 2",
-                    Text = tostring(value),
-                    Size = 13,
-                    Font = 2,
-                    ZIndex = library.zindexOrder.dropdown+2,
-                    Parent = valueObject.background,
-                })
-                valueObject.connection = utility:Connection(
-                    valueObject.background.MouseButton1Down,
-                    function()
-                        local currentList = self.selected
-                        if currentList then
-                            local val = currentList.values[idx]
-                            local currentSelected = currentList.selected
-                            local newSelected = currentList.multi and {} or val
+    local MAX_HEIGHT = 120 -- max dropdown height before scrolling
+    local PADDING = 2
 
-                            if currentList.multi then
-                                for i, v in next, currentSelected do
-                                    if v ~= "none" then
-                                        newSelected[i] = v
-                                    end
-                                end
-                                if table.find(newSelected, val) then
-                                    table.remove(newSelected, table.find(newSelected, val))
-                                else
-                                    table.insert(newSelected, val)
-                                end
-                            end
+    ----------------------------------------------------------------------
+    -- CREATE SCROLL ELEMENTS ONCE
+    ----------------------------------------------------------------------
+    if not objs.scrollHolder then
 
-                            currentList:Select(newSelected)
-                            if not currentList.multi then
-                                currentList.open = false
-                                currentList.objects.openText.Text = "+"
-                                window.dropdown.selected = nil
-                                window.dropdown.objects.background.Visible = false
-                            end
+        objs.scrollHolder = utility:Draw("Square", {
+            Size = newUDim2(1, -6, 1, 0),
+            Position = newUDim2(0, 3, 0, 0),
+            Parent = objs.background,
+            Transparency = 0,
+            ZIndex = library.zindexOrder.dropdown + 1
+        })
 
-                            for idx2, val2 in next, currentList.values do
-                                local obj = self.objects.values[idx2]
-                                if obj then
-                                    obj.background.Transparency =
-                                        ((typeof(newSelected) == "table" and table.find(newSelected, val2))
-                                            or newSelected == val2) and 1 or 0
-                                end
-                            end
-                        end
-                    end
+        objs.scrollContent = utility:Draw("Square", {
+            Size = newUDim2(1, 0, 1, 0),
+            Position = newUDim2(0, 0, 0, 0),
+            Parent = objs.scrollHolder,
+            Transparency = 0,
+            ZIndex = library.zindexOrder.dropdown + 2
+        })
+
+        -- Scrollbar track
+        objs.scrollBar = utility:Draw("Square", {
+            Size = newUDim2(0, 4, 1, 0),
+            Position = newUDim2(1, -4, 0, 0),
+            Parent = objs.scrollHolder,
+            Color = Color3.fromRGB(60, 60, 60),
+            ZIndex = library.zindexOrder.dropdown + 3
+        })
+
+        -- Scrollbar thumb
+        objs.scrollThumb = utility:Draw("Square", {
+            Size = newUDim2(1, 0, 0.1, 0),
+            Position = newUDim2(0, 0, 0, 0),
+            Parent = objs.scrollBar,
+            Color = Color3.fromRGB(130, 130, 130),
+            ZIndex = library.zindexOrder.dropdown + 4
+        })
+
+        objs.scrollOffset = 0
+
+        ------------------------------------------------------------------
+        -- SCROLLING (mouse wheel)
+        ------------------------------------------------------------------
+        utility:Connection(objs.scrollHolder.Object.InputChanged, function(input)
+            if input.UserInputType == Enum.UserInputType.MouseWheel then
+                local contentHeight = objs.scrollContent.Object.AbsoluteSize.Y
+                local limit = math.max(0, contentHeight - MAX_HEIGHT)
+
+                objs.scrollOffset = math.clamp(
+                    objs.scrollOffset - input.Position.Z * 12,
+                    0,
+                    limit
                 )
 
-                self.objects.values[idx] = valueObject
+                objs.scrollContent.Position = newUDim2(0, 0, 0, -objs.scrollOffset)
+
+                local thumbScale = MAX_HEIGHT / contentHeight
+                objs.scrollThumb.Size = newUDim2(1, 0, thumbScale, 0)
+                objs.scrollThumb.Position = newUDim2(0, 0, objs.scrollOffset / contentHeight, 0)
             end
-        end
-
-        for idx, val in next, list.values do
-            local valueObj = self.objects.values[idx]
-            if valueObj then
-                valueObj.background.Transparency =
-                    ((typeof(list.selected) == "table" and table.find(list.selected, val))
-                        or list.selected == val) and 1 or 0
-            end
-        end
-
-        -- layout
-        local y, padding = 2, 2
-        for idx, obj in next, self.objects.values do
-            local str = list.values[idx]
-            obj.background.Visible = (str ~= nil)
-            if str ~= nil then
-                obj.background.Position = newUDim2(0, 2, 0, y)
-                obj.text.Text = str
-                y = y + obj.background.Object.Size.Y + padding
-            end
-        end
-
-        -- resize holders
-        self.objects.valuesHolder.Size = newUDim2(1, 0, 0, y)
-
-        -- clamp dropdown max height
-        local maxHeight = 150
-        local finalHeight = math.min(y, maxHeight)
-        self.objects.background.Size = newUDim2(1,-6,0,finalHeight)
+        end)
     end
+
+    ----------------------------------------------------------------------
+    -- BUILD VALUE BUTTONS
+    ----------------------------------------------------------------------
+    for idx, value in next, list.values do
+        local valueObject = objs.values[idx]
+
+        if not valueObject then
+            valueObject = {}
+
+            valueObject.background = utility:Draw("Square", {
+                Size = newUDim2(1, -4, 0, 18),
+                Color = Color3.new(.25, .25, .25),
+                Parent = objs.scrollContent,
+                ZIndex = library.zindexOrder.dropdown + 2
+            })
+
+            valueObject.text = utility:Draw("Text", {
+                Position = newUDim2(0, 3, 0, 1),
+                Size = 13,
+                Font = 2,
+                ThemeColor = "Option Text 2",
+                Text = tostring(value),
+                Parent = valueObject.background,
+                ZIndex = library.zindexOrder.dropdown + 3
+            })
+
+            valueObject.connection = utility:Connection(valueObject.background.MouseButton1Down, function()
+                local currentList = self.selected
+                if currentList then
+                    local v = currentList.values[idx]
+                    local curSel = currentList.selected
+                    local newSel = currentList.multi and {} or v
+
+                    if currentList.multi then
+                        for i, val in next, curSel do
+                            if val ~= "none" then
+                                newSel[i] = val
+                            end
+                        end
+
+                        if table.find(newSel, v) then
+                            table.remove(newSel, table.find(newSel, v))
+                        else
+                            table.insert(newSel, v)
+                        end
+                    end
+
+                    currentList:Select(newSel)
+
+                    if not currentList.multi then
+                        currentList.open = false
+                        currentList.objects.openText.Text = "+"
+                        window.dropdown.selected = nil
+                        objs.background.Visible = false
+                    end
+
+                    -- highlight
+                    for i, val in next, currentList.values do
+                        local obj = objs.values[i]
+                        if obj then
+                            obj.background.Transparency =
+                                (typeof(newSel) == "table" and table.find(newSel, val) or newSel == val)
+                                and 1 or 0
+                        end
+                    end
+
+                end
+            end)
+
+            objs.values[idx] = valueObject
+        end
+    end
+
+    ----------------------------------------------------------------------
+    -- UPDATE DISPLAYED ITEMS & SCROLL SIZE
+    ----------------------------------------------------------------------
+    local y = 2
+    for idx, obj in next, objs.values do
+        local val = list.values[idx]
+        obj.background.Visible = val ~= nil
+        if val then
+            obj.background.Position = newUDim2(0, 2, 0, y)
+            obj.text.Text = val
+            y = y + 18 + PADDING
+        end
+    end
+
+    objs.scrollContent.Size = newUDim2(1, 0, 0, y)
+
+    local finalHeight = math.min(y + 4, MAX_HEIGHT)
+    objs.background.Size = newUDim2(1, -6, 0, finalHeight)
 end
 
         
