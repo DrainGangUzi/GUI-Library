@@ -186,20 +186,6 @@ do
         return newVector2(x,y)
     end
 
-    function utility:MouseOver(obj)
-    if not obj then return false end
-    local m = inputservice:GetMouseLocation()
-    local pos = obj.Position
-    local size = obj.Size
-
-    return (
-        m.X >= pos.X and
-        m.Y >= pos.Y and
-        m.X <= pos.X + size.X and
-        m.Y <= pos.Y + size.Y
-    )
-end
-
     function utility:Lerp(a,b,c)
         return a + (b-a) * c
     end
@@ -435,16 +421,6 @@ end
     end
 end
 
-function utility:MouseOver(obj)
-    local m = inputservice:GetMouseLocation()
-    local p = obj.Position
-    local s = obj.Size
-    return (
-        m.X >= p.X and m.X <= p.X + s.X and
-        m.Y >= p.Y and m.Y <= p.Y + s.Y
-    )
-end
-
 library.utility = utility
 
 function library:Unload()
@@ -601,66 +577,59 @@ function library:init()
     end)
 
     utility:Connection(inputservice.InputBegan, function(input, gpe)
-    if self.hasInit then
-        -- toggle key for opening/closing menu
-        if input.KeyCode == self.toggleKey and not library.opening and not gpe then
-            self:SetOpen(not self.open)
-            task.spawn(function()
-                library.opening = true;
-                task.wait(.15);
-                library.opening = false;
-            end)
-        end
+        if self.hasInit then
+            if input.KeyCode == self.toggleKey and not library.opening and not gpe then
+                self:SetOpen(not self.open)
+                task.spawn(function()
+                    library.opening = true;
+                    task.wait(.15);
+                    library.opening = false;
+                end)
+            end
+            if library.open then
+                local hoverObj = utility:GetHoverObject();
+                local hoverObjData = library.drawings[hoverObj];
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    mb1down = true;
+                    button1down:Fire()
+                    if hoverObj and hoverObjData then
+                        hoverObjData.MouseButton1Down:Fire(inputservice:GetMouseLocation())
+                    end
 
-        if library.open then
+                    -- // Update Sliders Click
+                    if library.draggingSlider ~= nil then
+                        local rel = inputservice:GetMouseLocation() - library.draggingSlider.objects.background.Object.Position;
+                        local val = utility:ConvertNumberRange(rel.X, 0 , library.draggingSlider.objects.background.Object.Size.X, library.draggingSlider.min, library.draggingSlider.max);
+                        library.draggingSlider:SetValue(val)
+                    end
+
+                elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+                    if hoverObj and hoverObjData then
+                        hoverObjData.MouseButton2Down:Fire(inputservice:GetMouseLocation())
+                    end
+                end
+            end
+        end
+    end)
+
+    utility:Connection(inputservice.InputEnded, function(input, gpe)
+        if self.hasInit and library.open then
             local hoverObj = utility:GetHoverObject();
             local hoverObjData = library.drawings[hoverObj];
 
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                mb1down = true;
-                button1down:Fire()
+                mb1down = false;
+                button1up:Fire();
                 if hoverObj and hoverObjData then
-                    hoverObjData.MouseButton1Down:Fire(inputservice:GetMouseLocation())
+                    hoverObjData.MouseButton1Up:Fire(inputservice:GetMouseLocation())
                 end
-
-                -- // Update Sliders Click
-                if library.draggingSlider ~= nil then
-                    local rel = inputservice:GetMouseLocation() - library.draggingSlider.objects.background.Object.Position;
-                    local val = utility:ConvertNumberRange(rel.X, 0 , library.draggingSlider.objects.background.Object.Size.X, library.draggingSlider.min, library.draggingSlider.max);
-                    library.draggingSlider:SetValue(val)
-                end
-
             elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
                 if hoverObj and hoverObjData then
-                    hoverObjData.MouseButton2Down:Fire(inputservice:GetMouseLocation())
+                    hoverObjData.MouseButton2Up:Fire(inputservice:GetMouseLocation())
                 end
             end
         end
-    end
-
-    -- 🔽 NEW: scroll wheel for dropdown
-    if input.UserInputType == Enum.UserInputType.MouseWheel and library.open then
-    for _, win in next, library.windows do
-        local dd = win.dropdown
-        if dd and dd.selected and dd.objects and dd.objects.background.Visible then
-
-            local bg = dd.objects.background
-
-            -- NEW: proper hover check for drawing objects
-            if utility:MouseOver(bg.Object) then
-                local maxScroll = dd.maxScroll or 0
-                if maxScroll > 0 then
-                    local dir = input.Position.Z  -- +1 up, -1 down
-                    dd.scrollOffset = clamp((dd.scrollOffset or 0) - dir * 18, 0, maxScroll)
-                    dd:Refresh()
-                end
-                break
-            end
-        end
-    end
-end
-
-end)
+    end)
 
     utility:Connection(inputservice.InputChanged, function(input, gpe)
         if input.UserInputType == Enum.UserInputType.MouseMovement then
@@ -1654,129 +1623,92 @@ end)
 
             end
 
-          function window.dropdown:Refresh()
-    if self.selected ~= nil then
-        local list = self.selected
-        local objs = self.objects
+            function window.dropdown:Refresh()
+                if self.selected ~= nil then
+                    local list = self.selected
+                    for idx, value in next, list.values do
+                        local valueObject = self.objects.values[idx]
+                        if valueObject == nil then
+                            valueObject = {};
+                            valueObject.background = utility:Draw('Square', {
+                                Size = newUDim2(1,-4,0,18);
+                                Color = Color3.new(.25,.25,.25);
+                                Transparency = 0;
+                                ZIndex = library.zindexOrder.dropdown+1;
+                                Parent = self.objects.background;
+                            })
+                            valueObject.text = utility:Draw('Text', {
+                                Position = newUDim2(0,3,0,1);
+                                ThemeColor = 'Option Text 2';
+                                Text = tostring(value);
+                                Size = 13;
+                                Font = 2;
+                                ZIndex = library.zindexOrder.dropdown+2;
+                                Parent = valueObject.background;
+                            })
+                            valueObject.connection = utility:Connection(valueObject.background.MouseButton1Down, function()
+                                local currentList = self.selected
+                                if currentList then
+                                    local val = currentList.values[idx]
+                                    local currentSelected = currentList.selected;
+                                    local newSelected = currentList.multi and {} or val;
+                                    
+                                    if currentList.multi then
+                                        for i,v in next, currentSelected do
+                                            if v == "none" then continue end
+                                            newSelected[i] = v;
+                                        end
+                                        if table.find(newSelected, val) then
+                                            table.remove(newSelected, table.find(newSelected, val));
+                                        else
+                                            table.insert(newSelected, val)
+                                        end
+                                    end
 
-        -- how tall the dropdown area can be (in pixels)
-        local VIEW_HEIGHT = 180 -- change if you want taller/shorter
-        local PADDING = 2
+                                    currentList:Select(newSelected);
+                                    if not currentList.multi then
+                                        currentList.open = false;
+                                        currentList.objects.openText.Text = '+';
+                                        window.dropdown.selected = nil;
+                                        window.dropdown.objects.background.Visible = false;
+                                    end
 
-        -- scroll state
-        self.scrollOffset = self.scrollOffset or 0
+                                    for idx, val in next, currentList.values do
+                                        local valueObj = self.objects.values[idx]
+                                        if valueObj then
+                                            valueObj.background.Transparency = (typeof(newSelected) == 'table' and table.find(newSelected, val) or newSelected == val) and 1 or 0
+                                        end
+                                    end
 
-        -- create row objects (same as before, just store them in objs.values)
-        for idx, value in next, list.values do
-            local valueObject = objs.values[idx]
-            if valueObject == nil then
-                valueObject = {}
-                valueObject.background = utility:Draw("Square", {
-                    Size = newUDim2(1,-4,0,18),
-                    Color = Color3.new(.25,.25,.25),
-                    Transparency = 0,
-                    ZIndex = library.zindexOrder.dropdown+1,
-                    Parent = objs.background
-                })
-                valueObject.text = utility:Draw("Text", {
-                    Position = newUDim2(0,3,0,1),
-                    ThemeColor = "Option Text 2",
-                    Text = tostring(value),
-                    Size = 13,
-                    Font = 2,
-                    ZIndex = library.zindexOrder.dropdown+2,
-                    Parent = valueObject.background
-                })
-                valueObject.connection = utility:Connection(valueObject.background.MouseButton1Down, function()
-                    local currentList = self.selected
-                    if currentList then
-                        local val = currentList.values[idx]
-                        local currentSelected = currentList.selected
-                        local newSelected = currentList.multi and {} or val
-                        
-                        if currentList.multi then
-                            for i,v in next, currentSelected do
-                                if v == "none" then continue end
-                                newSelected[i] = v
-                            end
-                            if table.find(newSelected, val) then
-                                table.remove(newSelected, table.find(newSelected, val))
-                            else
-                                table.insert(newSelected, val)
-                            end
-                        end
-
-                        currentList:Select(newSelected)
-                        if not currentList.multi then
-                            currentList.open = false
-                            currentList.objects.openText.Text = "+"
-                            window.dropdown.selected = nil
-                            window.dropdown.objects.background.Visible = false
-                        end
-
-                        for idx2, val2 in next, currentList.values do
-                            local valueObj2 = objs.values[idx2]
-                            if valueObj2 then
-                                valueObj2.background.Transparency =
-                                    (typeof(newSelected) == "table" and table.find(newSelected, val2) or newSelected == val2) and 1 or 0
-                            end
+                                end
+                            end)
+                            self.objects.values[idx] = valueObject
                         end
                     end
-                end)
-                objs.values[idx] = valueObject
-            end
-        end
 
-        -- highlight state for current selection (same as before)
-        for idx, val in next, list.values do
-            local valueObj = objs.values[idx]
-            if valueObj then
-                valueObj.background.Transparency =
-                    (typeof(list.selected) == "table" and table.find(list.selected, val) or list.selected == val) and 1 or 0
-            end
-        end
+                    for idx, val in next, list.values do
+                        local valueObj = self.objects.values[idx]
+                        if valueObj then
+                            valueObj.background.Transparency = (typeof(list.selected) == 'table' and table.find(list.selected, val) or list.selected == val) and 1 or 0
+                        end
+                    end
 
-        -- layout rows with scrolling
-        local y = 2
-        local contentHeight = 0
+                    local y,padding = 2,2
+                    for idx, obj in next, self.objects.values do
+                        local valueStr = list.values[idx]
+                        obj.background.Visible = valueStr ~= nil
+                        if valueStr ~= nil then
+                            obj.background.Position = newUDim2(0,2,0,y);
+                            obj.text.Text = valueStr;
+                            y = y + obj.background.Object.Size.Y + padding;
+                        end
+                    end
 
-        for idx, obj in next, objs.values do
-            local valueStr = list.values[idx]
-            obj.background.Visible = false
+                    self.objects.background.Size = newUDim2(1,-6,0,y);    
 
-            if valueStr ~= nil then
-                local rowH = obj.background.Object.Size.Y
-                local rowTop = y - self.scrollOffset
-                local rowBottom = rowTop + rowH
-
-                -- only show rows that overlap the visible viewport
-                local visible = rowBottom >= 0 and rowTop <= VIEW_HEIGHT
-
-                if visible then
-                    obj.background.Visible = true
-                    obj.background.Position = newUDim2(0,2,0,rowTop)
-                    obj.background:Update()  -- important
-                    obj.text.Text = valueStr
                 end
-
-                y = y + rowH + PADDING
             end
-        end
-
-        contentHeight = y
-        self.maxScroll = math.max(0, contentHeight - VIEW_HEIGHT)
-        -- just in case scroll got out of bounds from earlier
-        self.scrollOffset = clamp(self.scrollOffset, 0, self.maxScroll)
-        -- dropdown background height is clamped
-        objs.background.Size = newUDim2(1,-6,0, math.min(contentHeight, VIEW_HEIGHT + 4))
-        objs.background:Update()
-
-        -- store for scroll handler
-        self.viewHeight = VIEW_HEIGHT
-        self.contentHeight = contentHeight
-    end
-end
- 
+        
             window.dropdown:Refresh();
         end
         -------------------------
