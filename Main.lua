@@ -640,22 +640,26 @@ function library:init()
 
     -- 🔽 NEW: scroll wheel for dropdown
     if input.UserInputType == Enum.UserInputType.MouseWheel and library.open then
-        for _, win in next, library.windows do
-            local dd = win.dropdown
-            if dd and dd.selected and dd.objects and dd.objects.background.Visible then
-                -- only scroll if mouse is over this dropdown
-                if utility:MouseOver(dd.objects.background.Object) or utility:MouseOver(dd.objects.background) then
-                    local maxScroll = dd.maxScroll or 0
-                    if maxScroll > 0 then
-                        local dir = input.Position.Z  -- +1 or -1
-                        dd.scrollOffset = clamp((dd.scrollOffset or 0) - dir * 18, 0, maxScroll)
-                        dd:Refresh()
-                    end
-                    break
+    for _, win in next, library.windows do
+        local dd = win.dropdown
+        if dd and dd.selected and dd.objects and dd.objects.background.Visible then
+
+            local bg = dd.objects.background
+
+            -- NEW: proper hover check for drawing objects
+            if utility:MouseOver(bg.Object) then
+                local maxScroll = dd.maxScroll or 0
+                if maxScroll > 0 then
+                    local dir = input.Position.Z  -- +1 up, -1 down
+                    dd.scrollOffset = clamp((dd.scrollOffset or 0) - dir * 18, 0, maxScroll)
+                    dd:Refresh()
                 end
+                break
             end
         end
     end
+end
+
 end)
 
     utility:Connection(inputservice.InputChanged, function(input, gpe)
@@ -1773,20 +1777,6 @@ end
  
             window.dropdown:Refresh();
         end
-        -- DEBUG HITBOX OUTLINE
-task.spawn(function()
-    while task.wait() do
-        local dd = window.dropdown
-        if dd and dd.objects and dd.objects.background then
-            local bg = dd.objects.background
-
-            bg.Color = Color3.fromRGB(255, 0, 0)          -- Red box
-            bg.Outline = true
-            bg.OutlineColor = Color3.fromRGB(255, 255, 0) -- Yellow outline
-        end
-    end
-end)
-
         -------------------------
 
         local function tooltip(option)
