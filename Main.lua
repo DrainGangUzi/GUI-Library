@@ -1755,6 +1755,7 @@ end)
                 if visible then
                     obj.background.Visible = true
                     obj.background.Position = newUDim2(0,2,0,rowTop)
+                    obj.background:Update()  -- important
                     obj.text.Text = valueStr
                 end
 
@@ -1768,6 +1769,7 @@ end)
         self.scrollOffset = clamp(self.scrollOffset, 0, self.maxScroll)
         -- dropdown background height is clamped
         objs.background.Size = newUDim2(1,-6,0, math.min(contentHeight, VIEW_HEIGHT + 4))
+        objs.background:Update()
 
         -- store for scroll handler
         self.viewHeight = VIEW_HEIGHT
