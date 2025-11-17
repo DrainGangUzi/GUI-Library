@@ -186,6 +186,20 @@ do
         return newVector2(x,y)
     end
 
+    function utility:MouseOver(obj)
+    if not obj then return false end
+    local m = inputservice:GetMouseLocation()
+    local pos = obj.Position
+    local size = obj.Size
+
+    return (
+        m.X >= pos.X and
+        m.Y >= pos.Y and
+        m.X <= pos.X + size.X and
+        m.Y <= pos.Y + size.Y
+    )
+end
+
     function utility:Lerp(a,b,c)
         return a + (b-a) * c
     end
@@ -419,6 +433,16 @@ do
         drawing:Update()
         return proxy
     end
+end
+
+function utility:MouseOver(obj)
+    local m = inputservice:GetMouseLocation()
+    local p = obj.Position
+    local s = obj.Size
+    return (
+        m.X >= p.X and m.X <= p.X + s.X and
+        m.Y >= p.Y and m.Y <= p.Y + s.Y
+    )
 end
 
 library.utility = utility
