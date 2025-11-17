@@ -1762,7 +1762,6 @@ end)
         self.maxScroll = math.max(0, contentHeight - VIEW_HEIGHT)
         -- just in case scroll got out of bounds from earlier
         self.scrollOffset = clamp(self.scrollOffset, 0, self.maxScroll)
-
         -- dropdown background height is clamped
         objs.background.Size = newUDim2(1,-6,0, math.min(contentHeight, VIEW_HEIGHT + 4))
 
