@@ -1773,6 +1773,20 @@ end
  
             window.dropdown:Refresh();
         end
+        -- DEBUG HITBOX OUTLINE
+task.spawn(function()
+    while task.wait() do
+        local dd = window.dropdown
+        if dd and dd.objects and dd.objects.background then
+            local bg = dd.objects.background
+
+            bg.Color = Color3.fromRGB(255, 0, 0)          -- Red box
+            bg.Outline = true
+            bg.OutlineColor = Color3.fromRGB(255, 255, 0) -- Yellow outline
+        end
+    end
+end)
+
         -------------------------
 
         local function tooltip(option)
