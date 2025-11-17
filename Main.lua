@@ -644,7 +644,7 @@ function library:init()
             local dd = win.dropdown
             if dd and dd.selected and dd.objects and dd.objects.background.Visible then
                 -- only scroll if mouse is over this dropdown
-                if utility:MouseOver(dd.objects.background.Object) then
+                if utility:MouseOver(dd.objects.background.Object) or utility:MouseOver(dd.objects.background) then
                     local maxScroll = dd.maxScroll or 0
                     if maxScroll > 0 then
                         local dir = input.Position.Z  -- +1 or -1
