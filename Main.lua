@@ -690,30 +690,34 @@ function library:init()
     end)
     
     function self:SetOpen(bool)
-        self.open = bool;
-        screenGui.Enabled = bool;
+    self.open = bool;
+    screenGui.Enabled = bool;
 
-        if bool and library.flags.disablemenumovement then
-            actionservice:BindAction(
-                'FreezeMovement',
-                function()
-                    return Enum.ContextActionResult.Sink
-                end,
-                false,
-                unpack(Enum.PlayerActions:GetEnumItems())
-            )
-        else
-            actionservice:UnbindAction('FreezeMovement');
-        end
-
-        updateCursor();
-        for _,window in next, self.windows do
-            window:SetOpen(bool);
-        end
-
-        library.CurrentTooltip = nil;
-        tooltipObjects.background.Visible = false
+    if bool and library.flags.disablemenumovement then
+        actionservice:BindAction(
+            'FreezeMovement',
+            function()
+                return Enum.ContextActionResult.Sink
+            end,
+            false,
+            unpack(Enum.PlayerActions:GetEnumItems())
+        )
+    else
+        actionservice:UnbindAction('FreezeMovement');
     end
+
+    updateCursor();
+
+    -- SAFETY: only call :SetOpen on valid windows
+    for _, window in next, self.windows do
+        if typeof(window) == "table" and window.SetOpen then
+            window:SetOpen(bool)
+        end
+    end
+
+    library.CurrentTooltip = nil;
+    tooltipObjects.background.Visible = false
+end
 
     function self.UpdateThemeColors()
         for _,v in next, library.drawings do
