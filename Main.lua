@@ -1644,7 +1644,7 @@ function library:init()
             end
 
             
-function window.dropdown:Refresh()
+                function window.dropdown:Refresh()
                 if self.selected ~= nil then
                     local list = self.selected
                     local objs = self.objects
@@ -1753,7 +1753,7 @@ function window.dropdown:Refresh()
                     objs.background.Size = newUDim2(1,-6,0, math.min(contentHeight, VIEW_HEIGHT + 4));
                 end
             end
-end
+        end
         
             window.dropdown:Refresh();
         end
