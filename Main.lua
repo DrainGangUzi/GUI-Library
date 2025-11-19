@@ -1770,11 +1770,12 @@ function window.dropdown:Refresh()
     self.maxScroll = math.max(0, contentHeight - VIEW_HEIGHT)
     self.scrollOffset = math.clamp(self.scrollOffset, 0, self.maxScroll)
 
-    -- constant height — prevents glitches
+     -- constant height — prevents glitches
     objs.background.Size = newUDim2(1,-6,0, VIEW_HEIGHT)
-end
+end 
 
-            window.dropdown:Refresh();
+window.dropdown:Refresh()
+
         -------------------------
 
         local function tooltip(option)
