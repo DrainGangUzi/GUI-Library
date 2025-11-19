@@ -1650,20 +1650,22 @@ end
             
 function window.dropdown:Refresh()
     if self.selected ~= nil then
+        
         local list = self.selected
         local objs = self.objects
 
         local VIEW_HEIGHT = 180
         local PADDING = 2
 
-        -- init scroll
         self.scrollOffset = self.scrollOffset or 0
 
-        -- ensure value objects exist
-        for idx, value in next, list.values do
+
+        for idx, value in pairs(list.values) do
             local valueObject = objs.values[idx]
             if valueObject == nil then
+
                 valueObject = {}
+                
                 valueObject.background = utility:Draw('Square', {
                     Size = newUDim2(1,-4,0,18);
                     Color = Color3.new(.25,.25,.25);
@@ -1671,6 +1673,7 @@ function window.dropdown:Refresh()
                     ZIndex = library.zindexOrder.dropdown+1;
                     Parent = objs.background;
                 })
+
                 valueObject.text = utility:Draw('Text', {
                     Position = newUDim2(0,3,0,1);
                     ThemeColor = 'Option Text 2';
@@ -1680,16 +1683,20 @@ function window.dropdown:Refresh()
                     ZIndex = library.zindexOrder.dropdown+2;
                     Parent = valueObject.background;
                 })
+
                 valueObject.connection = utility:Connection(valueObject.background.MouseButton1Down, function()
                     local currentList = self.selected
                     if currentList then
+
                         local val = currentList.values[idx]
                         local currentSelected = currentList.selected
                         local newSelected = currentList.multi and {} or val
 
                         if currentList.multi then
-                            for i,v in next, currentSelected do
-                                if v ~= "none" then newSelected[i] = v end
+                            for i, v in pairs(currentSelected) do
+                                if v ~= "none" then
+                                    newSelected[i] = v
+                                end
                             end
                             if table.find(newSelected, val) then
                                 table.remove(newSelected, table.find(newSelected, val))
@@ -1707,13 +1714,16 @@ function window.dropdown:Refresh()
                             window.dropdown.objects.background.Visible = false
                         end
 
-                        for idx2, val2 in next, currentList.values do
+                        -- update highlighting
+                        for idx2, val2 in pairs(currentList.values) do
                             local valueObj2 = objs.values[idx2]
                             if valueObj2 then
                                 valueObj2.background.Transparency =
-                                    (typeof(newSelected) == "table" and table.find(newSelected, val2) or newSelected == val2) and 1 or 0
+                                    (typeof(newSelected) == "table" and table.find(newSelected, val2)
+                                    or newSelected == val2) and 1 or 0
                             end
                         end
+
                     end
                 end)
 
@@ -1721,24 +1731,25 @@ function window.dropdown:Refresh()
             end
         end
 
-        -- highlight selection
-        for idx, val in next, list.values do
+        for idx, val in pairs(list.values) do
             local valueObj = objs.values[idx]
             if valueObj then
                 valueObj.background.Transparency =
-                    (typeof(list.selected) == 'table' and table.find(list.selected, val) or list.selected == val) and 1 or 0
+                    (typeof(list.selected) == "table" and table.find(list.selected, val)
+                    or list.selected == val) and 1 or 0
             end
         end
 
-        -- layout rows (FIXED ORDER)
         local y = 2
         local contentHeight = 0
 
-        -- create sorted indices 1 → N
         local sorted = {}
-        for i = 1, #list.values do
-            sorted[i] = i
+        for idx in pairs(list.values) do
+            table.insert(sorted, idx)
         end
+        table.sort(sorted, function(a, b)
+            return a < b
+        end)
 
         for _, idx in ipairs(sorted) do
             local valueStr = list.values[idx]
@@ -1762,10 +1773,12 @@ function window.dropdown:Refresh()
         end
 
         contentHeight = y
+
         self.maxScroll = math.max(0, contentHeight - VIEW_HEIGHT)
         self.scrollOffset = clamp(self.scrollOffset, 0, self.maxScroll)
 
         objs.background.Size = newUDim2(1,-6,0, math.min(contentHeight, VIEW_HEIGHT + 4))
+
     end
 end
         
