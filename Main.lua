@@ -1665,10 +1665,13 @@ function window.dropdown:Refresh()
     local ordered = {}
 
     for _, v in pairs(list.values) do
-        table.insert(ordered, v)
+        -- FIX: don't include selected value inside the dropdown list
+        if v ~= list.selected then
+            table.insert(ordered, v)
+        end
     end
 
-    -- optional alphabetical sort (removes random jumps)
+    -- alphabetical sort (optional but prevents chaos)
     table.sort(ordered, function(a, b)
         return tostring(a):lower() < tostring(b):lower()
     end)
@@ -1700,13 +1703,16 @@ function window.dropdown:Refresh()
                 Parent = valueObject.background
             })
 
+            -- click handler
             utility:Connection(valueObject.background.MouseButton1Down, function()
                 if list.multi then
                     local newSel = {}
 
                     if type(list.selected) == "table" then
                         for _, s in ipairs(list.selected) do
-                            table.insert(newSel, s)
+                            if s ~= "none" then
+                                table.insert(newSel, s)
+                            end
                         end
                     end
 
@@ -1725,12 +1731,12 @@ function window.dropdown:Refresh()
                     window.dropdown.objects.background.Visible = false
                 end
 
-                -- refresh highlight
+                -- refresh transparency
                 for j, v in ipairs(ordered) do
                     local obj2 = objs.values[j]
                     if obj2 then
                         obj2.background.Transparency =
-                            (list.selected == v or table.find(list.selected, v)) and 1 or 0
+                            (list.selected == v or (type(list.selected)=="table" and table.find(list.selected, v))) and 1 or 0
                     end
                 end
             end)
@@ -1768,7 +1774,8 @@ function window.dropdown:Refresh()
     self.maxScroll = math.max(0, contentHeight - VIEW_HEIGHT)
     self.scrollOffset = math.clamp(self.scrollOffset, 0, self.maxScroll)
 
-    objs.background.Size = newUDim2(1,-6,0,VIEW_HEIGHT)
+    -- dropdown always fixed height
+    objs.background.Size = newUDim2(1,-6,0, VIEW_HEIGHT)
 end
 
 window.dropdown:Refresh()
