@@ -1665,13 +1665,10 @@ function window.dropdown:Refresh()
     local ordered = {}
 
     for _, v in pairs(list.values) do
-        -- FIX: don't include selected value inside the dropdown list
-        if v ~= list.selected then
-            table.insert(ordered, v)
-        end
+        table.insert(ordered, v)
     end
 
-    -- alphabetical sort (optional but prevents chaos)
+    -- optional alphabetical sort
     table.sort(ordered, function(a, b)
         return tostring(a):lower() < tostring(b):lower()
     end)
@@ -1703,16 +1700,13 @@ function window.dropdown:Refresh()
                 Parent = valueObject.background
             })
 
-            -- click handler
             utility:Connection(valueObject.background.MouseButton1Down, function()
                 if list.multi then
                     local newSel = {}
 
                     if type(list.selected) == "table" then
                         for _, s in ipairs(list.selected) do
-                            if s ~= "none" then
-                                table.insert(newSel, s)
-                            end
+                            table.insert(newSel, s)
                         end
                     end
 
@@ -1731,12 +1725,15 @@ function window.dropdown:Refresh()
                     window.dropdown.objects.background.Visible = false
                 end
 
-                -- refresh transparency
+                -- refresh highlight
                 for j, v in ipairs(ordered) do
                     local obj2 = objs.values[j]
                     if obj2 then
-                        obj2.background.Transparency =
-                            (list.selected == v or (type(list.selected)=="table" and table.find(list.selected, v))) and 1 or 0
+                        if list.multi then
+                            obj2.background.Transparency = table.find(list.selected, v) and 1 or 0
+                        else
+                            obj2.background.Transparency = (list.selected == v) and 1 or 0
+                        end
                     end
                 end
             end)
@@ -1746,7 +1743,7 @@ function window.dropdown:Refresh()
     end
 
     --------------------------------------------------------------------
-    -- LAYOUT + SCROLLING (no glitching)
+    -- LAYOUT + SCROLLING (no glitching / overlap)
     --------------------------------------------------------------------
     local y = 2
     local contentHeight = 0
@@ -1759,22 +1756,33 @@ function window.dropdown:Refresh()
         local rowTop = y - self.scrollOffset
         local rowBottom = rowTop + rowH
 
+        -- always hide by default
         bg.Visible = false
 
-        if rowBottom >= 0 and rowTop <= VIEW_HEIGHT then
-            bg.Visible = true
-            bg.Position = newUDim2(0,2,0,rowTop)
-            obj.text.Text = value
-        end
+        if value ~= nil then
+            -- ❗ only rows fully inside viewport (no partial rows)
+            if rowTop >= 0 and rowBottom <= VIEW_HEIGHT then
+                bg.Visible = true
+                bg.Position = newUDim2(0,2,0,rowTop)
+                obj.text.Text = value
+            end
 
-        y = y + rowH + PADDING
+            y = y + rowH + PADDING
+        end
+    end
+
+    -- hide any leftover old rows beyond current count
+    for i = #ordered + 1, #objs.values do
+        local extra = objs.values[i]
+        if extra and extra.background then
+            extra.background.Visible = false
+        end
     end
 
     contentHeight = y
     self.maxScroll = math.max(0, contentHeight - VIEW_HEIGHT)
     self.scrollOffset = math.clamp(self.scrollOffset, 0, self.maxScroll)
 
-    -- dropdown always fixed height
     objs.background.Size = newUDim2(1,-6,0, VIEW_HEIGHT)
 end
 
