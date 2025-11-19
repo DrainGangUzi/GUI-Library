@@ -1774,9 +1774,7 @@ function window.dropdown:Refresh()
     objs.background.Size = newUDim2(1,-6,0, VIEW_HEIGHT)
 end
 
-        
             window.dropdown:Refresh();
-        end
         -------------------------
 
         local function tooltip(option)
