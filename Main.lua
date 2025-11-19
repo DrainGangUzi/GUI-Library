@@ -1649,114 +1649,125 @@ end
 
             
 function window.dropdown:Refresh()
-                if self.selected ~= nil then
-                    local list = self.selected
-                    local objs = self.objects
+    if self.selected ~= nil then
+        local list = self.selected
+        local objs = self.objects
 
-                    local VIEW_HEIGHT = 180
-                    local PADDING = 2
+        local VIEW_HEIGHT = 180
+        local PADDING = 2
 
-                    -- init scroll
-                    self.scrollOffset = self.scrollOffset or 0
+        -- init scroll
+        self.scrollOffset = self.scrollOffset or 0
 
-                    -- ensure value objects exist
-                    for idx, value in next, list.values do
-                        local valueObject = objs.values[idx]
-                        if valueObject == nil then
-                            valueObject = {};
-                            valueObject.background = utility:Draw('Square', {
-                                Size = newUDim2(1,-4,0,18);
-                                Color = Color3.new(.25,.25,.25);
-                                Transparency = 0;
-                                ZIndex = library.zindexOrder.dropdown+1;
-                                Parent = objs.background;
-                            })
-                            valueObject.text = utility:Draw('Text', {
-                                Position = newUDim2(0,3,0,1);
-                                ThemeColor = 'Option Text 2';
-                                Text = tostring(value);
-                                Size = 13;
-                                Font = 2;
-                                ZIndex = library.zindexOrder.dropdown+2;
-                                Parent = valueObject.background;
-                            })
-                            valueObject.connection = utility:Connection(valueObject.background.MouseButton1Down, function()
-                                local currentList = self.selected
-                                if currentList then
-                                    local val = currentList.values[idx]
-                                    local currentSelected = currentList.selected;
-                                    local newSelected = currentList.multi and {} or val;
+        -- ensure value objects exist
+        for idx, value in next, list.values do
+            local valueObject = objs.values[idx]
+            if valueObject == nil then
+                valueObject = {}
+                valueObject.background = utility:Draw('Square', {
+                    Size = newUDim2(1,-4,0,18);
+                    Color = Color3.new(.25,.25,.25);
+                    Transparency = 0;
+                    ZIndex = library.zindexOrder.dropdown+1;
+                    Parent = objs.background;
+                })
+                valueObject.text = utility:Draw('Text', {
+                    Position = newUDim2(0,3,0,1);
+                    ThemeColor = 'Option Text 2';
+                    Text = tostring(value);
+                    Size = 13;
+                    Font = 2;
+                    ZIndex = library.zindexOrder.dropdown+2;
+                    Parent = valueObject.background;
+                })
+                valueObject.connection = utility:Connection(valueObject.background.MouseButton1Down, function()
+                    local currentList = self.selected
+                    if currentList then
+                        local val = currentList.values[idx]
+                        local currentSelected = currentList.selected
+                        local newSelected = currentList.multi and {} or val
 
-                                    if currentList.multi then
-                                        for i,v in next, currentSelected do
-                                            if v == "none" then continue end
-                                            newSelected[i] = v;
-                                        end
-                                        if table.find(newSelected, val) then
-                                            table.remove(newSelected, table.find(newSelected, val));
-                                        else
-                                            table.insert(newSelected, val)
-                                        end
-                                    end
-
-                                    currentList:Select(newSelected);
-                                    if not currentList.multi then
-                                        currentList.open = false;
-                                        currentList.objects.openText.Text = '+';
-                                        window.dropdown.selected = nil;
-                                        window.dropdown.objects.background.Visible = false;
-                                    end
-
-                                    for idx2, val2 in next, currentList.values do
-                                        local valueObj2 = objs.values[idx2]
-                                        if valueObj2 then
-                                            valueObj2.background.Transparency = (typeof(newSelected) == 'table' and table.find(newSelected, val2) or newSelected == val2) and 1 or 0
-                                        end
-                                    end
-
-                                end
-                            end)
-                            objs.values[idx] = valueObject
-                        end
-                    end
-
-                    -- highlight current selection
-                    for idx, val in next, list.values do
-                        local valueObj = objs.values[idx]
-                        if valueObj then
-                            valueObj.background.Transparency = (typeof(list.selected) == 'table' and table.find(list.selected, val) or list.selected == val) and 1 or 0
-                        end
-                    end
-
-                    -- layout rows with scrolling
-                    local y = 2
-                    local contentHeight = 0
-
-                    for idx, obj in next, objs.values do
-                        local valueStr = list.values[idx]
-                        obj.background.Visible = false
-                        if valueStr ~= nil then
-                            local rowH = obj.background.Object.Size.Y
-                            local rowTop = y - self.scrollOffset
-                            local rowBottom = rowTop + rowH
-
-                            if rowBottom >= 0 and rowTop <= VIEW_HEIGHT then
-                                obj.background.Visible = true
-                                obj.background.Position = newUDim2(0,2,0,rowTop);
-                                obj.text.Text = valueStr;
+                        if currentList.multi then
+                            for i,v in next, currentSelected do
+                                if v ~= "none" then newSelected[i] = v end
                             end
+                            if table.find(newSelected, val) then
+                                table.remove(newSelected, table.find(newSelected, val))
+                            else
+                                table.insert(newSelected, val)
+                            end
+                        end
 
-                            y = y + rowH + PADDING
+                        currentList:Select(newSelected)
+
+                        if not currentList.multi then
+                            currentList.open = false
+                            currentList.objects.openText.Text = "+"
+                            window.dropdown.selected = nil
+                            window.dropdown.objects.background.Visible = false
+                        end
+
+                        for idx2, val2 in next, currentList.values do
+                            local valueObj2 = objs.values[idx2]
+                            if valueObj2 then
+                                valueObj2.background.Transparency =
+                                    (typeof(newSelected) == "table" and table.find(newSelected, val2) or newSelected == val2) and 1 or 0
+                            end
                         end
                     end
+                end)
 
-                    contentHeight = y
-                    self.maxScroll = math.max(0, contentHeight - VIEW_HEIGHT)
-                    self.scrollOffset = clamp(self.scrollOffset, 0, self.maxScroll)
-
-                    objs.background.Size = newUDim2(1,-6,0, math.min(contentHeight, VIEW_HEIGHT + 4));
-                end
+                objs.values[idx] = valueObject
             end
+        end
+
+        -- highlight selection
+        for idx, val in next, list.values do
+            local valueObj = objs.values[idx]
+            if valueObj then
+                valueObj.background.Transparency =
+                    (typeof(list.selected) == 'table' and table.find(list.selected, val) or list.selected == val) and 1 or 0
+            end
+        end
+
+        -- layout rows (FIXED ORDER)
+        local y = 2
+        local contentHeight = 0
+
+        -- create sorted indices 1 → N
+        local sorted = {}
+        for i = 1, #list.values do
+            sorted[i] = i
+        end
+
+        for _, idx in ipairs(sorted) do
+            local valueStr = list.values[idx]
+            local obj = objs.values[idx]
+
+            obj.background.Visible = false
+
+            if valueStr ~= nil then
+                local rowH = obj.background.Object.Size.Y
+                local rowTop = y - self.scrollOffset
+                local rowBottom = rowTop + rowH
+
+                if rowBottom >= 0 and rowTop <= VIEW_HEIGHT then
+                    obj.background.Visible = true
+                    obj.background.Position = newUDim2(0,2,0,rowTop)
+                    obj.text.Text = valueStr
+                end
+
+                y = y + rowH + PADDING
+            end
+        end
+
+        contentHeight = y
+        self.maxScroll = math.max(0, contentHeight - VIEW_HEIGHT)
+        self.scrollOffset = clamp(self.scrollOffset, 0, self.maxScroll)
+
+        objs.background.Size = newUDim2(1,-6,0, math.min(contentHeight, VIEW_HEIGHT + 4))
+    end
+end
         
             window.dropdown:Refresh();
         end
