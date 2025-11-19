@@ -1775,7 +1775,7 @@ function window.dropdown:Refresh()
 end 
 
 window.dropdown:Refresh()
-
+end
         -------------------------
 
         local function tooltip(option)
