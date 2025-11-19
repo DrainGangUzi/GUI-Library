@@ -632,6 +632,26 @@ function library:init()
     end)
 
     utility:Connection(inputservice.InputChanged, function(input, gpe)
+
+        if input.UserInputType == Enum.UserInputType.MouseWheel then
+            if library.open then
+                for _, win in next, library.windows do
+                    local dd = win.dropdown
+                    if dd and dd.selected and dd.objects and dd.objects.background.Visible then
+                        if utility:MouseOver(dd.objects.background.Object) then
+                            local maxScroll = dd.maxScroll or 0
+                            if maxScroll > 0 then
+                                local dir = input.Position.Z
+                                dd.scrollOffset = clamp((dd.scrollOffset or 0) - dir * 18, 0, maxScroll)
+                                dd:Refresh()
+                            end
+                            break
+                        end
+                    end
+                end
+            end
+        end
+
         if input.UserInputType == Enum.UserInputType.MouseMovement then
             if library.open then
                 mousemove:Fire(inputservice:GetMouseLocation());
@@ -1623,11 +1643,21 @@ function library:init()
 
             end
 
-            function window.dropdown:Refresh()
+            
+function window.dropdown:Refresh()
                 if self.selected ~= nil then
                     local list = self.selected
+                    local objs = self.objects
+
+                    local VIEW_HEIGHT = 180
+                    local PADDING = 2
+
+                    -- init scroll
+                    self.scrollOffset = self.scrollOffset or 0
+
+                    -- ensure value objects exist
                     for idx, value in next, list.values do
-                        local valueObject = self.objects.values[idx]
+                        local valueObject = objs.values[idx]
                         if valueObject == nil then
                             valueObject = {};
                             valueObject.background = utility:Draw('Square', {
@@ -1635,7 +1665,7 @@ function library:init()
                                 Color = Color3.new(.25,.25,.25);
                                 Transparency = 0;
                                 ZIndex = library.zindexOrder.dropdown+1;
-                                Parent = self.objects.background;
+                                Parent = objs.background;
                             })
                             valueObject.text = utility:Draw('Text', {
                                 Position = newUDim2(0,3,0,1);
@@ -1652,7 +1682,7 @@ function library:init()
                                     local val = currentList.values[idx]
                                     local currentSelected = currentList.selected;
                                     local newSelected = currentList.multi and {} or val;
-                                    
+
                                     if currentList.multi then
                                         for i,v in next, currentSelected do
                                             if v == "none" then continue end
@@ -1673,41 +1703,57 @@ function library:init()
                                         window.dropdown.objects.background.Visible = false;
                                     end
 
-                                    for idx, val in next, currentList.values do
-                                        local valueObj = self.objects.values[idx]
-                                        if valueObj then
-                                            valueObj.background.Transparency = (typeof(newSelected) == 'table' and table.find(newSelected, val) or newSelected == val) and 1 or 0
+                                    for idx2, val2 in next, currentList.values do
+                                        local valueObj2 = objs.values[idx2]
+                                        if valueObj2 then
+                                            valueObj2.background.Transparency = (typeof(newSelected) == 'table' and table.find(newSelected, val2) or newSelected == val2) and 1 or 0
                                         end
                                     end
 
                                 end
                             end)
-                            self.objects.values[idx] = valueObject
+                            objs.values[idx] = valueObject
                         end
                     end
 
+                    -- highlight current selection
                     for idx, val in next, list.values do
-                        local valueObj = self.objects.values[idx]
+                        local valueObj = objs.values[idx]
                         if valueObj then
                             valueObj.background.Transparency = (typeof(list.selected) == 'table' and table.find(list.selected, val) or list.selected == val) and 1 or 0
                         end
                     end
 
-                    local y,padding = 2,2
-                    for idx, obj in next, self.objects.values do
+                    -- layout rows with scrolling
+                    local y = 2
+                    local contentHeight = 0
+
+                    for idx, obj in next, objs.values do
                         local valueStr = list.values[idx]
-                        obj.background.Visible = valueStr ~= nil
+                        obj.background.Visible = false
                         if valueStr ~= nil then
-                            obj.background.Position = newUDim2(0,2,0,y);
-                            obj.text.Text = valueStr;
-                            y = y + obj.background.Object.Size.Y + padding;
+                            local rowH = obj.background.Object.Size.Y
+                            local rowTop = y - self.scrollOffset
+                            local rowBottom = rowTop + rowH
+
+                            if rowBottom >= 0 and rowTop <= VIEW_HEIGHT then
+                                obj.background.Visible = true
+                                obj.background.Position = newUDim2(0,2,0,rowTop);
+                                obj.text.Text = valueStr;
+                            end
+
+                            y = y + rowH + PADDING
                         end
                     end
 
-                    self.objects.background.Size = newUDim2(1,-6,0,y);    
+                    contentHeight = y
+                    self.maxScroll = math.max(0, contentHeight - VIEW_HEIGHT)
+                    self.scrollOffset = clamp(self.scrollOffset, 0, self.maxScroll)
 
+                    objs.background.Size = newUDim2(1,-6,0, math.min(contentHeight, VIEW_HEIGHT + 4));
                 end
             end
+end
         
             window.dropdown:Refresh();
         end
