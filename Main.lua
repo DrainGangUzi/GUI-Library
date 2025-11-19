@@ -1659,14 +1659,26 @@ function window.dropdown:Refresh()
 
     self.scrollOffset = self.scrollOffset or 0
 
-    ---------------------------------------------------------
-    -- Ensure objects exist for each row
-    ---------------------------------------------------------
+    --------------------------------------------------------------------
+    -- CLEAN + ORDERED ARRAY (fixes gaps, glitches, overlaps)
+    --------------------------------------------------------------------
+    local ordered = {}
+
+    for _, v in pairs(list.values) do
+        table.insert(ordered, v)
+    end
+
+    -- optional alphabetical sort (removes random jumps)
+    table.sort(ordered, function(a, b)
+        return tostring(a):lower() < tostring(b):lower()
+    end)
+
+    --------------------------------------------------------------------
+    -- Ensure UI objects exist
+    --------------------------------------------------------------------
     objs.values = objs.values or {}
 
-    for i = 1, #list.values do
-        local value = list.values[i]
-
+    for i, value in ipairs(ordered) do
         if not objs.values[i] then
             local valueObject = {}
 
@@ -1688,91 +1700,76 @@ function window.dropdown:Refresh()
                 Parent = valueObject.background
             })
 
-            valueObject.connection = utility:Connection(
-                valueObject.background.MouseButton1Down,
-                function()
-                    if list.multi then
-                        local new = {}
+            utility:Connection(valueObject.background.MouseButton1Down, function()
+                if list.multi then
+                    local newSel = {}
 
-                        if type(list.selected) == "table" then
-                            for _, x in ipairs(list.selected) do
-                                table.insert(new, x)
-                            end
+                    if type(list.selected) == "table" then
+                        for _, s in ipairs(list.selected) do
+                            table.insert(newSel, s)
                         end
-
-                        if table.find(new, value) then
-                            table.remove(new, table.find(new, value))
-                        else
-                            table.insert(new, value)
-                        end
-
-                        list:Select(new)
-                    else
-                        list:Select(value)
-                        list.open = false
-                        list.objects.openText.Text = "+"
-                        window.dropdown.selected = nil
-                        window.dropdown.objects.background.Visible = false
                     end
 
-                    -- refresh transparency
-                    for j = 1, #list.values do
-                        local obj2 = objs.values[j]
-                        if obj2 then
-                            local val2 = list.values[j]
-                            if list.multi then
-                                obj2.background.Transparency = table.find(list.selected, val2) and 1 or 0
-                            else
-                                obj2.background.Transparency = (list.selected == val2) and 1 or 0
-                            end
-                        end
+                    if table.find(newSel, value) then
+                        table.remove(newSel, table.find(newSel, value))
+                    else
+                        table.insert(newSel, value)
+                    end
+
+                    list:Select(newSel)
+                else
+                    list:Select(value)
+                    list.open = false
+                    list.objects.openText.Text = "+"
+                    window.dropdown.selected = nil
+                    window.dropdown.objects.background.Visible = false
+                end
+
+                -- refresh highlight
+                for j, v in ipairs(ordered) do
+                    local obj2 = objs.values[j]
+                    if obj2 then
+                        obj2.background.Transparency =
+                            (list.selected == v or table.find(list.selected, v)) and 1 or 0
                     end
                 end
-            )
+            end)
 
             objs.values[i] = valueObject
         end
     end
 
-    ---------------------------------------------------------
-    -- Layout rows with SCROLL (fixed, stable, no overlap)
-    ---------------------------------------------------------
+    --------------------------------------------------------------------
+    -- LAYOUT + SCROLLING (no glitching)
+    --------------------------------------------------------------------
     local y = 2
     local contentHeight = 0
 
-    for i = 1, #list.values do
-        local value = list.values[i]
+    for i, value in ipairs(ordered) do
         local obj = objs.values[i]
+        local bg = obj.background
 
-        if obj then
-            local bg = obj.background
-            local rowH = bg.Object.Size.Y
-            local rowTop = y - self.scrollOffset
-            local rowBottom = rowTop + rowH
+        local rowH = bg.Object.Size.Y
+        local rowTop = y - self.scrollOffset
+        local rowBottom = rowTop + rowH
 
-            -- always hide by default
-            bg.Visible = false
+        bg.Visible = false
 
-            if value ~= nil then
-                -- only show rows inside viewport
-                if rowBottom >= 0 and rowTop <= VIEW_HEIGHT then
-                    bg.Visible = true
-                    bg.Position = newUDim2(0,2,0,rowTop)
-                    obj.text.Text = value
-                end
-
-                y = y + rowH + PADDING
-            end
+        if rowBottom >= 0 and rowTop <= VIEW_HEIGHT then
+            bg.Visible = true
+            bg.Position = newUDim2(0,2,0,rowTop)
+            obj.text.Text = value
         end
+
+        y = y + rowH + PADDING
     end
 
     contentHeight = y
     self.maxScroll = math.max(0, contentHeight - VIEW_HEIGHT)
     self.scrollOffset = math.clamp(self.scrollOffset, 0, self.maxScroll)
 
-     -- constant height — prevents glitches
-    objs.background.Size = newUDim2(1,-6,0, VIEW_HEIGHT)
-end 
+    objs.background.Size = newUDim2(1,-6,0,VIEW_HEIGHT)
+end
 
 window.dropdown:Refresh()
 end
