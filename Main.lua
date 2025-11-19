@@ -1744,34 +1744,46 @@ function window.dropdown:Refresh()
     end
 
     ---------------------------------------------------------
-    -- Layout rows with SCROLL
-    ---------------------------------------------------------
-    local y = 2
-    local contentHeight = 0
+-- Layout rows with SCROLL (corrected version)
+---------------------------------------------------------
+local y = 2
+local contentHeight = 0
 
-    for i, value in ipairs(ordered) do
-        local obj = objs.values[i]
-        obj.background.Visible = false
+for idx = 1, #list.values do
+    local value = list.values[idx]
+    local obj = objs.values[idx]
 
-        local rowH = obj.background.Object.Size.Y
-        local rowTop = y - self.scrollOffset
-        local rowBottom = rowTop + rowH
+    if not obj then
+        -- safety: skip non-existing rows
+        continue
+    end
 
+    local bg = obj.background
+    local rowH = bg.Object.Size.Y
+    local rowTop = y - self.scrollOffset
+    local rowBottom = rowTop + rowH
+
+    -- default hide
+    bg.Visible = false
+
+    if value ~= nil then
+        -- only show when inside viewport
         if rowBottom >= 0 and rowTop <= VIEW_HEIGHT then
-            obj.background.Visible = true
-            obj.background.Position = newUDim2(0,2,0,rowTop)
+            bg.Visible = true
+            bg.Position = newUDim2(0,2,0,rowTop)
             obj.text.Text = value
         end
 
         y = y + rowH + PADDING
     end
-
-    contentHeight = y
-    self.maxScroll = math.max(0, contentHeight - VIEW_HEIGHT)
-    self.scrollOffset = math.clamp(self.scrollOffset, 0, self.maxScroll)
-
-    objs.background.Size = newUDim2(1,-6,0, math.min(contentHeight, VIEW_HEIGHT + 4))
 end
+
+contentHeight = y
+self.maxScroll = math.max(0, contentHeight - VIEW_HEIGHT)
+self.scrollOffset = math.clamp(self.scrollOffset, 0, self.maxScroll)
+
+-- FIXED: dropdown height is constant
+objs.background.Size = newUDim2(1,-6,0, VIEW_HEIGHT)
         
             window.dropdown:Refresh();
         end
