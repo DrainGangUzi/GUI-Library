@@ -1786,6 +1786,37 @@ function window.dropdown:Refresh()
     objs.background.Size = newUDim2(1,-6,0, VIEW_HEIGHT)
 end
 
+---------------------------------------------------------
+-- LAYOUT + SCROLLING (NO GAP, NO OVERLAP)
+---------------------------------------------------------
+local y = 0
+local contentHeight = 0
+
+for i, value in ipairs(ordered) do
+    local obj = objs.values[i]
+    local bg = obj.background
+
+    local rowH = bg.Object.Size.Y
+    local rowTop = y - self.scrollOffset
+    local rowBottom = rowTop + rowH
+
+    bg.Visible = false
+
+    if rowBottom >= 0 and rowTop <= VIEW_HEIGHT then
+        bg.Visible = true
+        bg.Position = newUDim2(0,2,0,rowTop + 2)
+        obj.text.Text = value
+    end
+
+    y = y + rowH + PADDING
+end
+
+contentHeight = y
+self.maxScroll = math.max(0, contentHeight - VIEW_HEIGHT)
+self.scrollOffset = math.clamp(self.scrollOffset, 0, self.maxScroll)
+
+objs.background.Size = newUDim2(1,-6,0,VIEW_HEIGHT)
+
 window.dropdown:Refresh()
 end
         -------------------------
