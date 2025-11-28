@@ -1660,9 +1660,10 @@ function window.dropdown:Refresh()
     self.scrollOffset = self.scrollOffset or 0
 
     --------------------------------------------------------------------
-    -- CLEAN ORDERED LIST
+    -- BUILD CLEAN ORDERED LIST (no gaps, stable)
     --------------------------------------------------------------------
     local ordered = {}
+
     for _, v in pairs(list.values) do
         if v ~= nil then
             table.insert(ordered, v)
@@ -1674,106 +1675,114 @@ function window.dropdown:Refresh()
     end)
 
     --------------------------------------------------------------------
-    -- CREATE ROW OBJECTS IF MISSING
+    -- ENSURE ROW OBJECTS EXIST
     --------------------------------------------------------------------
     objs.values = objs.values or {}
 
     for i, value in ipairs(ordered) do
-        if not objs.values[i] then
-            local valueObject = {}
+        local row = objs.values[i]
 
-            valueObject.background = utility:Draw("Square", {
-                Size = newUDim2(1, -4, 0, 18),
+        if not row then
+            row = {}
+
+            row.background = utility:Draw("Square", {
+                Size = newUDim2(1,-4,0,18),
                 Color = Color3.new(.25,.25,.25),
                 Transparency = 0,
                 ZIndex = library.zindexOrder.dropdown + 1,
                 Parent = objs.background
             })
 
-            valueObject.text = utility:Draw("Text", {
+            row.text = utility:Draw("Text", {
                 Position = newUDim2(0,3,0,1),
                 ThemeColor = "Option Text 2",
                 Text = tostring(value),
                 Size = 13,
                 Font = 2,
                 ZIndex = library.zindexOrder.dropdown + 2,
-                Parent = valueObject.background
+                Parent = row.background
             })
 
-            -- ⬇️ IMPORTANT: use the *current text* instead of the old captured `value`
-            utility:Connection(valueObject.background.MouseButton1Down, function()
-                -- whatever is visually shown in this row right now
-                local clicked = valueObject.text.Text
+            -- store current value on the row itself
+            row.value = value
 
-                if list.multi then
+            -- click handler uses row.value (always up to date)
+            utility:Connection(row.background.MouseButton1Down, function()
+                local currentList = self.selected
+                if not currentList then return end
+
+                local clicked = row.value
+
+                if currentList.multi then
                     local newSel = {}
 
-                    if type(list.selected) == "table" then
-                        for _, s in ipairs(list.selected) do
+                    if type(currentList.selected) == "table" then
+                        for _, s in ipairs(currentList.selected) do
                             table.insert(newSel, s)
                         end
                     end
 
-                    if table.find(newSel, clicked) then
-                        table.remove(newSel, table.find(newSel, clicked))
+                    local idx = table.find(newSel, clicked)
+                    if idx then
+                        table.remove(newSel, idx)
                     else
                         table.insert(newSel, clicked)
                     end
 
-                    list:Select(newSel)
+                    currentList:Select(newSel)
                 else
-                    list:Select(clicked)
-                    list.open = false
-                    list.objects.openText.Text = "+"
+                    currentList:Select(clicked)
+                    currentList.open = false
+                    currentList.objects.openText.Text = "+"
                     window.dropdown.selected = nil
                     window.dropdown.objects.background.Visible = false
                 end
 
-                -- refresh highlight based on *current* selection
-                for j, v2 in ipairs(ordered) do
-                    local obj2 = objs.values[j]
-                    if obj2 then
-                        local isSelected
-                        if list.multi then
-                            isSelected = table.find(list.selected, v2) ~= nil
-                        else
-                            isSelected = (list.selected == v2)
-                        end
-                        obj2.background.Transparency = isSelected and 1 or 0
-                    end
-                end
+                -- re-layout & re-highlight with fresh data
+                window.dropdown:Refresh()
             end)
 
-            objs.values[i] = valueObject
+            objs.values[i] = row
         end
     end
 
     --------------------------------------------------------------------
-    -- LAYOUT (NO OVERLAP / GAP)
+    -- LAYOUT + SCROLL (no overlap / wrong selection)
     --------------------------------------------------------------------
     local y = 2
 
     for i, value in ipairs(ordered) do
-        local obj = objs.values[i]
-        local bg = obj.background
+        local row = objs.values[i]
+        local bg  = row.background
+
+        -- keep row's value in sync with this position
+        row.value = value
 
         local rowH = bg.Object.Size.Y
         local rowTop = y - self.scrollOffset
         local rowBottom = rowTop + rowH
 
+        -- reset every frame
         bg.Visible = false
         bg.Position = newUDim2(0, 2, 0, rowTop)
 
-        if rowTop >= 0 and rowBottom <= VIEW_HEIGHT then
+        if rowBottom >= 0 and rowTop <= VIEW_HEIGHT then
             bg.Visible = true
-            obj.text.Text = value
+            row.text.Text = value
+
+            -- highlight correct selection
+            if list.multi then
+                bg.Transparency = (list.selected and table.find(list.selected, value)) and 1 or 0
+            else
+                bg.Transparency = (list.selected == value) and 1 or 0
+            end
         end
 
         y = y + rowH + PADDING
     end
 
     --------------------------------------------------------------------
-    -- HIDE UNUSED ROWS
+    -- HIDE EXTRA / OLD ROWS
     --------------------------------------------------------------------
     for i = #ordered + 1, #objs.values do
         local extra = objs.values[i]
@@ -1783,15 +1792,12 @@ function window.dropdown:Refresh()
     end
 
     --------------------------------------------------------------------
-    -- SCROLL LIMITS
+    -- SCROLL LIMITS + BACKGROUND HEIGHT
     --------------------------------------------------------------------
-    local contentHeight = y
+    local contentHeight = (#ordered * (18 + PADDING)) + 2
     self.maxScroll = math.max(0, contentHeight - VIEW_HEIGHT)
     self.scrollOffset = math.clamp(self.scrollOffset, 0, self.maxScroll)
 
-    --------------------------------------------------------------------
-    -- CONSTANT DROPDOWN HEIGHT
-    --------------------------------------------------------------------
     objs.background.Size = newUDim2(1, -6, 0, VIEW_HEIGHT)
 end
 
