@@ -640,11 +640,15 @@ function library:init()
                     if dd and dd.selected and dd.objects and dd.objects.background.Visible then
                         if utility:MouseOver(dd.objects.background.Object) then
                             local maxScroll = dd.maxScroll or 0
-                            if maxScroll > 0 then
-                                local dir = input.Position.Z
-                                dd.scrollOffset = clamp((dd.scrollOffset or 0) - dir * 18, 0, maxScroll)
-                                dd:Refresh()
-                            end
+                        if maxScroll > 0 then
+                            local dir = input.Position.Z  -- +1 or -1 from wheel
+                            local STEP = 20 -- 18px row + 2px padding  
+                            local offset = (dd.scrollOffset or 0) - dir * STEP
+                            -- snap to whole rows so we never stop on half a row
+                            offset = math.floor(offset / STEP + 0.5) * STEP
+                            dd.scrollOffset = math.clamp(offset, 0, maxScroll)
+                            dd:Refresh()
+                        end
                             break
                         end
                     end
