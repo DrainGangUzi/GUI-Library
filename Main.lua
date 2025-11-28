@@ -1700,7 +1700,13 @@ function window.dropdown:Refresh()
                 Parent = valueObject.background
             })
 
+            -- store current value for THIS row
+            valueObject.currentValue = value
+
             utility:Connection(valueObject.background.MouseButton1Down, function()
+                local v = valueObject.currentValue
+                if not v then return end
+
                 if list.multi then
                     local newSel = {}
 
@@ -1710,22 +1716,22 @@ function window.dropdown:Refresh()
                         end
                     end
 
-                    if table.find(newSel, value) then
-                        table.remove(newSel, table.find(newSel, value))
+                    if table.find(newSel, v) then
+                        table.remove(newSel, table.find(newSel, v))
                     else
-                        table.insert(newSel, value)
+                        table.insert(newSel, v)
                     end
 
                     list:Select(newSel)
                 else
-                    list:Select(value)
+                    list:Select(v)
                     list.open = false
                     list.objects.openText.Text = "+"
                     window.dropdown.selected = nil
                     window.dropdown.objects.background.Visible = false
                 end
 
-                -- highlight
+                -- refresh highlight
                 for j, v2 in ipairs(ordered) do
                     local obj2 = objs.values[j]
                     if obj2 then
@@ -1742,52 +1748,52 @@ function window.dropdown:Refresh()
         end
     end
 
---------------------------------------------------------------------
--- LAYOUT (NO OVERLAP, NO GAP)
---------------------------------------------------------------------
-local y = 2 -- fresh layout baseline
+    --------------------------------------------------------------------
+    -- LAYOUT (no overlap, no gaps, correct mapping)
+    --------------------------------------------------------------------
+    local y = 2
+    local contentHeight = 0
 
-for i, value in ipairs(ordered) do
-    local obj = objs.values[i]
-    local bg = obj.background
+    for i, value in ipairs(ordered) do
+        local obj = objs.values[i]
+        local bg  = obj.background
 
-    local rowH = bg.Object.Size.Y
-    local rowTop = y - self.scrollOffset
-    local rowBottom = rowTop + rowH
+        -- update mapping for this frame
+        obj.currentValue = value
 
-    -- reset position every frame to avoid overlap
-    bg.Visible = false
-    bg.Position = newUDim2(0, 2, 0, rowTop)
+        local rowH      = bg.Object.Size.Y
+        local rowTop    = y - self.scrollOffset
+        local rowBottom = rowTop + rowH
 
-    -- only draw rows fully inside the dropdown
-    if rowTop >= 0 and rowBottom <= VIEW_HEIGHT then
-        bg.Visible = true
-        obj.text.Text = value
+        bg.Visible = false
+        bg.Position = newUDim2(0, 2, 0, rowTop)
+
+        -- show if any part of row is visible
+        if rowBottom >= 0 and rowTop <= VIEW_HEIGHT then
+            bg.Visible = true
+            obj.text.Text = value
+        end
+
+        y = y + rowH + PADDING
     end
-
-    y = y + rowH + PADDING
-end
 
     --------------------------------------------------------------------
     -- HIDE UNUSED ROWS
     --------------------------------------------------------------------
     for i = #ordered + 1, #objs.values do
-        if objs.values[i] and objs.values[i].background then
-            objs.values[i].background.Visible = false
+        local extra = objs.values[i]
+        if extra and extra.background then
+            extra.background.Visible = false
         end
     end
 
     --------------------------------------------------------------------
-    -- SCROLL LIMITS BASED ON REAL HEIGHT
+    -- SCROLL LIMITS & SIZE
     --------------------------------------------------------------------
-    local contentHeight = y -- REAL measured height
-
+    contentHeight = y
     self.maxScroll = math.max(0, contentHeight - VIEW_HEIGHT)
     self.scrollOffset = math.clamp(self.scrollOffset, 0, self.maxScroll)
 
-    --------------------------------------------------------------------
-    -- CONSTANT DROPDOWN BOX HEIGHT
-    --------------------------------------------------------------------
     objs.background.Size = newUDim2(1, -6, 0, VIEW_HEIGHT)
 end
 
