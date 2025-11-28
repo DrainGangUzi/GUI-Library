@@ -1742,30 +1742,31 @@ function window.dropdown:Refresh()
         end
     end
 
-    --------------------------------------------------------------------
-    -- LAYOUT (NO OVERLAP, NO GAP)
-    --------------------------------------------------------------------
-    local y = 2 -- fresh layout baseline
+--------------------------------------------------------------------
+-- LAYOUT (NO OVERLAP, NO GAP)
+--------------------------------------------------------------------
+local y = 2 -- fresh layout baseline
 
-    for i, value in ipairs(ordered) do
-        local obj = objs.values[i]
-        local bg = obj.background
+for i, value in ipairs(ordered) do
+    local obj = objs.values[i]
+    local bg = obj.background
 
-        local rowH = bg.Object.Size.Y
-        local rowTop = y - self.scrollOffset
-        local rowBottom = rowTop + rowH
+    local rowH = bg.Object.Size.Y
+    local rowTop = y - self.scrollOffset
+    local rowBottom = rowTop + rowH
 
-        -- reset position every frame to avoid overlap
-        bg.Visible = false
-        bg.Position = newUDim2(0, 2, 0, rowTop)
+    -- reset position every frame to avoid overlap
+    bg.Visible = false
+    bg.Position = newUDim2(0, 2, 0, rowTop)
 
-        if rowBottom >= 0 and rowTop <= VIEW_HEIGHT then
-            bg.Visible = true
-            obj.text.Text = value
-        end
-
-        y = y + rowH + PADDING
+    -- only draw rows fully inside the dropdown
+    if rowTop >= 0 and rowBottom <= VIEW_HEIGHT then
+        bg.Visible = true
+        obj.text.Text = value
     end
+
+    y = y + rowH + PADDING
+end
 
     --------------------------------------------------------------------
     -- HIDE UNUSED ROWS
