@@ -633,30 +633,24 @@ function library:init()
 
     utility:Connection(inputservice.InputChanged, function(input, gpe)
 
-        if input.UserInputType == Enum.UserInputType.MouseWheel then
-    if library.open then
-        for _, win in next, library.windows do
-            local dd = win.dropdown
-            if dd and dd.selected and dd.objects and dd.objects.background.Visible then
-                if utility:MouseOver(dd.objects.background.Object) then
-                    local maxScroll = dd.maxScroll or 0
-                    if maxScroll > 0 then
-                        local STEP = 20 -- 18 height + 2 padding
-                        local dir = input.Position.Z
-                        local offset = (dd.scrollOffset or 0) - dir * STEP
-
-                        offset = math.floor(offset / STEP + 0.5) * STEP
-                        dd.scrollOffset = math.clamp(offset, 0, maxScroll)
-
-                        dd:Refresh()
+    if input.UserInputType == Enum.UserInputType.MouseWheel then
+        if library.open then
+            for _, win in next, library.windows do
+                local dd = win.dropdown
+                if dd and dd.selected and dd.objects and dd.objects.background.Visible then
+                    if utility:MouseOver(dd.objects.background.Object) then
+                        local maxScroll = dd.maxScroll or 0
+                        if maxScroll > 0 then
+                            local dir = input.Position.Z
+                            dd.scrollOffset = clamp((dd.scrollOffset or 0) - dir * 20, 0, maxScroll)
+                            dd:Refresh()
+                        end
+                        break
                     end
-                    break
                 end
             end
         end
     end
-end
-
 
         if input.UserInputType == Enum.UserInputType.MouseMovement then
             if library.open then
@@ -1662,12 +1656,11 @@ function window.dropdown:Refresh()
 
     local VIEW_HEIGHT = 180
     local PADDING = 2
-    local ROW_HEIGHT = 18 -- matches Size = newUDim2(1,-4,0,18)
 
     self.scrollOffset = self.scrollOffset or 0
 
     --------------------------------------------------------------------
-    -- CLEAN ORDERED LIST (no holes, sorted for stability)
+    -- CLEAN ORDERED LIST
     --------------------------------------------------------------------
     local ordered = {}
     for _, v in pairs(list.values) do
@@ -1690,7 +1683,7 @@ function window.dropdown:Refresh()
             local valueObject = {}
 
             valueObject.background = utility:Draw("Square", {
-                Size = newUDim2(1, -4, 0, ROW_HEIGHT),
+                Size = newUDim2(1, -4, 0, 18),
                 Color = Color3.new(.25,.25,.25),
                 Transparency = 0,
                 ZIndex = library.zindexOrder.dropdown + 1,
@@ -1707,7 +1700,11 @@ function window.dropdown:Refresh()
                 Parent = valueObject.background
             })
 
+            -- ⬇️ IMPORTANT: use the *current text* instead of the old captured `value`
             utility:Connection(valueObject.background.MouseButton1Down, function()
+                -- whatever is visually shown in this row right now
+                local clicked = valueObject.text.Text
+
                 if list.multi then
                     local newSel = {}
 
@@ -1717,30 +1714,32 @@ function window.dropdown:Refresh()
                         end
                     end
 
-                    if table.find(newSel, value) then
-                        table.remove(newSel, table.find(newSel, value))
+                    if table.find(newSel, clicked) then
+                        table.remove(newSel, table.find(newSel, clicked))
                     else
-                        table.insert(newSel, value)
+                        table.insert(newSel, clicked)
                     end
 
                     list:Select(newSel)
                 else
-                    list:Select(value)
+                    list:Select(clicked)
                     list.open = false
                     list.objects.openText.Text = "+"
                     window.dropdown.selected = nil
                     window.dropdown.objects.background.Visible = false
                 end
 
-                -- update highlight
+                -- refresh highlight based on *current* selection
                 for j, v2 in ipairs(ordered) do
                     local obj2 = objs.values[j]
                     if obj2 then
+                        local isSelected
                         if list.multi then
-                            obj2.background.Transparency = table.find(list.selected, v2) and 1 or 0
+                            isSelected = table.find(list.selected, v2) ~= nil
                         else
-                            obj2.background.Transparency = (list.selected == v2) and 1 or 0
+                            isSelected = (list.selected == v2)
                         end
+                        obj2.background.Transparency = isSelected and 1 or 0
                     end
                 end
             end)
@@ -1750,9 +1749,9 @@ function window.dropdown:Refresh()
     end
 
     --------------------------------------------------------------------
-    -- LAYOUT (NO OVERLAP, NO GAP)
+    -- LAYOUT (NO OVERLAP / GAP)
     --------------------------------------------------------------------
-    local y = 2 -- baseline inside dropdown
+    local y = 2
 
     for i, value in ipairs(ordered) do
         local obj = objs.values[i]
@@ -1762,12 +1761,10 @@ function window.dropdown:Refresh()
         local rowTop = y - self.scrollOffset
         local rowBottom = rowTop + rowH
 
-        -- reset every frame
         bg.Visible = false
         bg.Position = newUDim2(0, 2, 0, rowTop)
 
-        -- ✅ only draw if row TOP is inside viewport
-        if rowTop >= 0 and rowTop < VIEW_HEIGHT then
+        if rowTop >= 0 and rowBottom <= VIEW_HEIGHT then
             bg.Visible = true
             obj.text.Text = value
         end
@@ -1786,14 +1783,14 @@ function window.dropdown:Refresh()
     end
 
     --------------------------------------------------------------------
-    -- SCROLL LIMITS (match step = ROW_HEIGHT + PADDING)
+    -- SCROLL LIMITS
     --------------------------------------------------------------------
-    local contentHeight = (#ordered * (ROW_HEIGHT + PADDING)) + 2
+    local contentHeight = y
     self.maxScroll = math.max(0, contentHeight - VIEW_HEIGHT)
     self.scrollOffset = math.clamp(self.scrollOffset, 0, self.maxScroll)
 
     --------------------------------------------------------------------
-    -- CONSTANT DROPDOWN BOX HEIGHT
+    -- CONSTANT DROPDOWN HEIGHT
     --------------------------------------------------------------------
     objs.background.Size = newUDim2(1, -6, 0, VIEW_HEIGHT)
 end
