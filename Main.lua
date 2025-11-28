@@ -631,7 +631,7 @@ function library:init()
         end
     end)
 
-    uutility:Connection(inputservice.InputChanged, function(input, gpe)
+    utility:Connection(inputservice.InputChanged, function(input, gpe)
     if input.UserInputType == Enum.UserInputType.MouseWheel and library.open then
         for _, win in next, library.windows do
             local dd = win.dropdown
