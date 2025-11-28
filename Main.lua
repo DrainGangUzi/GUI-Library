@@ -1660,21 +1660,22 @@ function window.dropdown:Refresh()
     self.scrollOffset = self.scrollOffset or 0
 
     --------------------------------------------------------------------
-    -- CLEAN + ORDERED ARRAY (fixes gaps, glitches, overlaps)
+    -- CLEAN ARRAY (remove all nil gaps)
     --------------------------------------------------------------------
     local ordered = {}
 
     for _, v in pairs(list.values) do
-        table.insert(ordered, v)
+        if v ~= nil then
+            table.insert(ordered, v)
+        end
     end
 
-    -- optional alphabetical sort
     table.sort(ordered, function(a, b)
         return tostring(a):lower() < tostring(b):lower()
     end)
 
     --------------------------------------------------------------------
-    -- Ensure UI objects exist
+    -- ENSURE ROW OBJECTS EXIST
     --------------------------------------------------------------------
     objs.values = objs.values or {}
 
@@ -1724,18 +1725,6 @@ function window.dropdown:Refresh()
                     window.dropdown.selected = nil
                     window.dropdown.objects.background.Visible = false
                 end
-
-                -- refresh highlight
-                for j, v in ipairs(ordered) do
-                    local obj2 = objs.values[j]
-                    if obj2 then
-                        if list.multi then
-                            obj2.background.Transparency = table.find(list.selected, v) and 1 or 0
-                        else
-                            obj2.background.Transparency = (list.selected == v) and 1 or 0
-                        end
-                    end
-                end
             end)
 
             objs.values[i] = valueObject
@@ -1743,7 +1732,7 @@ function window.dropdown:Refresh()
     end
 
     --------------------------------------------------------------------
-    -- LAYOUT + SCROLLING (no glitching / overlap)
+    -- LAYOUT (NO GAP, NO OVERLAP)
     --------------------------------------------------------------------
     local y = 2
     local contentHeight = 0
@@ -1756,22 +1745,21 @@ function window.dropdown:Refresh()
         local rowTop = y - self.scrollOffset
         local rowBottom = rowTop + rowH
 
-        -- always hide by default
         bg.Visible = false
 
-        if value ~= nil then
-            -- ❗ only rows fully inside viewport (no partial rows)
-            if rowTop >= 0 and rowBottom <= VIEW_HEIGHT then
-                bg.Visible = true
-                bg.Position = newUDim2(0,2,0,rowTop)
-                obj.text.Text = value
-            end
-
-            y = y + rowH + PADDING
+        -- Show rows even when partially visible
+        if rowBottom >= 0 and rowTop <= VIEW_HEIGHT then
+            bg.Visible = true
+            bg.Position = newUDim2(0,2,0,rowTop)
+            obj.text.Text = value
         end
+
+        y = y + rowH + PADDING
     end
 
-    -- hide any leftover old rows beyond current count
+    --------------------------------------------------------------------
+    -- HIDE UNUSED OLD ROWS
+    --------------------------------------------------------------------
     for i = #ordered + 1, #objs.values do
         local extra = objs.values[i]
         if extra and extra.background then
@@ -1779,11 +1767,15 @@ function window.dropdown:Refresh()
         end
     end
 
-    contentHeight = y
+    --------------------------------------------------------------------
+    -- FIXED VIEWPORT HEIGHT (NO MORE GAP)
+    --------------------------------------------------------------------
+    objs.background.Size = newUDim2(1,-6,0, VIEW_HEIGHT)
+
+    -- Correct scroll boundary
+    contentHeight = (#ordered * (18 + PADDING)) + 2
     self.maxScroll = math.max(0, contentHeight - VIEW_HEIGHT)
     self.scrollOffset = math.clamp(self.scrollOffset, 0, self.maxScroll)
-
-    objs.background.Size = newUDim2(1,-6,0, VIEW_HEIGHT)
 end
 
 window.dropdown:Refresh()
