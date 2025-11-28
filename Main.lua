@@ -1660,31 +1660,33 @@ function window.dropdown:Refresh()
     self.scrollOffset = self.scrollOffset or 0
 
     --------------------------------------------------------------------
-    -- CLEAN + ORDERED ARRAY (fixes gaps, glitches, overlaps)
+    -- CLEAN ORDERED LIST
     --------------------------------------------------------------------
     local ordered = {}
     for _, v in pairs(list.values) do
-        table.insert(ordered, v)
+        if v ~= nil then
+            table.insert(ordered, v)
+        end
     end
 
-    -- stable alphabetical order (optional, keeps order predictable)
     table.sort(ordered, function(a, b)
         return tostring(a):lower() < tostring(b):lower()
     end)
 
     --------------------------------------------------------------------
-    -- Ensure UI objects exist (one-time creation)
+    -- CREATE ROW OBJECTS IF MISSING
     --------------------------------------------------------------------
     objs.values = objs.values or {}
+
     for i, value in ipairs(ordered) do
         if not objs.values[i] then
             local valueObject = {}
 
             valueObject.background = utility:Draw("Square", {
-                Size = newUDim2(1,-4,0,18),
+                Size = newUDim2(1, -4, 0, 18),
                 Color = Color3.new(.25,.25,.25),
                 Transparency = 0,
-                ZIndex = library.zindexOrder.dropdown+1,
+                ZIndex = library.zindexOrder.dropdown + 1,
                 Parent = objs.background
             })
 
@@ -1694,22 +1696,26 @@ function window.dropdown:Refresh()
                 Text = tostring(value),
                 Size = 13,
                 Font = 2,
-                ZIndex = library.zindexOrder.dropdown+2,
+                ZIndex = library.zindexOrder.dropdown + 2,
                 Parent = valueObject.background
             })
 
-            -- click handler (works for multi or single select)
-            valueObject.connection = utility:Connection(valueObject.background.MouseButton1Down, function()
+            utility:Connection(valueObject.background.MouseButton1Down, function()
                 if list.multi then
                     local newSel = {}
+
                     if type(list.selected) == "table" then
-                        for _, s in ipairs(list.selected) do table.insert(newSel, s) end
+                        for _, s in ipairs(list.selected) do
+                            table.insert(newSel, s)
+                        end
                     end
+
                     if table.find(newSel, value) then
                         table.remove(newSel, table.find(newSel, value))
                     else
                         table.insert(newSel, value)
                     end
+
                     list:Select(newSel)
                 else
                     list:Select(value)
@@ -1719,7 +1725,7 @@ function window.dropdown:Refresh()
                     window.dropdown.objects.background.Visible = false
                 end
 
-                -- refresh highlight
+                -- highlight
                 for j, v2 in ipairs(ordered) do
                     local obj2 = objs.values[j]
                     if obj2 then
@@ -1737,61 +1743,52 @@ function window.dropdown:Refresh()
     end
 
     --------------------------------------------------------------------
-    -- LAYOUT + SCROLLING (fixed, integer positions => no overlap)
+    -- LAYOUT (NO OVERLAP, NO GAP)
     --------------------------------------------------------------------
-    local y = 2
-    local contentHeight = 0
+    local y = 2 -- fresh layout baseline
 
     for i, value in ipairs(ordered) do
         local obj = objs.values[i]
-        if not obj then
-            -- skip if somehow not created
-            goto continue_row
-        end
-
         local bg = obj.background
-        local textObj = obj.text
 
-        -- row height (pixel)
         local rowH = bg.Object.Size.Y
-
-        -- compute position inside the dropdown background (pixels)
-        local rowTop = y - (self.scrollOffset or 0)
+        local rowTop = y - self.scrollOffset
         local rowBottom = rowTop + rowH
 
-        -- default hide
+        -- reset position every frame to avoid overlap
         bg.Visible = false
+        bg.Position = newUDim2(0, 2, 0, rowTop)
 
-        -- show if even partly visible (use integer to avoid fractional overlap)
         if rowBottom >= 0 and rowTop <= VIEW_HEIGHT then
-            -- use math.floor to snap to whole pixels
-            local offsetY = math.floor(rowTop + 0.5)
-            bg.Position = newUDim2(0,2,0, offsetY)
-            textObj.Text = value
             bg.Visible = true
+            obj.text.Text = value
         end
 
         y = y + rowH + PADDING
-
-        ::continue_row::
     end
 
-    -- hide any leftover old rows beyond current count (cleanup)
-    for k = #ordered + 1, #objs.values do
-        local extra = objs.values[k]
-        if extra and extra.background then
-            extra.background.Visible = false
+    --------------------------------------------------------------------
+    -- HIDE UNUSED ROWS
+    --------------------------------------------------------------------
+    for i = #ordered + 1, #objs.values do
+        if objs.values[i] and objs.values[i].background then
+            objs.values[i].background.Visible = false
         end
     end
 
-    contentHeight = y
+    --------------------------------------------------------------------
+    -- SCROLL LIMITS BASED ON REAL HEIGHT
+    --------------------------------------------------------------------
+    local contentHeight = y -- REAL measured height
+
     self.maxScroll = math.max(0, contentHeight - VIEW_HEIGHT)
     self.scrollOffset = math.clamp(self.scrollOffset, 0, self.maxScroll)
 
-    -- keep the dropdown box height constant (prevents shifting glitches)
-    objs.background.Size = newUDim2(1,-6,0, VIEW_HEIGHT)
+    --------------------------------------------------------------------
+    -- CONSTANT DROPDOWN BOX HEIGHT
+    --------------------------------------------------------------------
+    objs.background.Size = newUDim2(1, -6, 0, VIEW_HEIGHT)
 end
-
 
 window.dropdown:Refresh()
 end
