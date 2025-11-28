@@ -638,7 +638,7 @@ function library:init()
             if dd and dd.selected and dd.objects and dd.objects.background.Visible then
                 if utility:MouseOver(dd.objects.background.Object) then
                     -- use row index, not pixels
-                    local dir = input.Position.Z - +1 up, -1 down
+                    local dir = input.Position.Z -- +1 up, -1 down
                     local idx = (dd.scrollIndex or 0) - dir
 
                     local maxIdx = dd.maxScrollIndex or 0
