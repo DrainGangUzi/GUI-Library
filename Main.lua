@@ -631,21 +631,26 @@ function library:init()
         end
     end)
 
-    utility:Connection(inputservice.InputChanged, function(input, gpe)
-    if input.UserInputType ~= Enum.UserInputType.MouseWheel then return end
+    utility:Connection(inputservice.InputChanged, function()
     if not library.open then return end
+
+    local input = inputservice:GetLastInputType()
+    if input ~= Enum.UserInputType.MouseWheel then return end
 
     for _, win in next, library.windows do
         local dd = win.dropdown
         if dd and dd.selected and dd.objects and dd.objects.background.Visible then
             if utility:MouseOver(dd.objects.background.Object) then
-                -- scrollIndex-based scrolling (matches your Refresh version)
-                local dir = input.Position.Z -- +1 / -1
+                local delta = inputservice:GetMouseWheelDelta()
 
                 dd.scrollIndex = dd.scrollIndex or 0
                 dd.maxScrollIndex = dd.maxScrollIndex or 0
 
-                dd.scrollIndex = math.clamp(dd.scrollIndex - dir, 0, dd.maxScrollIndex)
+                dd.scrollIndex = math.clamp(
+                    dd.scrollIndex - delta,
+                    0,
+                    dd.maxScrollIndex
+                )
 
                 dd:Refresh()
                 break
