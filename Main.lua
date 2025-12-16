@@ -1905,6 +1905,7 @@ if objs.scrollbar then
     else
         objs.scrollbar.Visible = false
     end
+  end
 end
 
 window.dropdown:Refresh()
