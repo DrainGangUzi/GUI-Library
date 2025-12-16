@@ -1800,15 +1800,25 @@ function window.dropdown:Refresh()
         end
     end
 
-    --------------------------------------------------------------------
-    -- CONSTANT DROPDOWN HEIGHT
-    --------------------------------------------------------------------
-    objs.background.Size = newUDim2(1, -6, 0, VIEW_HEIGHT)
+--------------------------------------------------------------------
+-- DROPDOWN HEIGHT (NO DEAD BLACK STRIP)
+--------------------------------------------------------------------
+local rowsToShow = math.min(rowsVisible, #ordered)
 
-    -- expose for scroll wheel logic
-    self.rowsVisible   = rowsVisible
-    self.totalValues   = #ordered
+-- Top padding (2) + rows + padding between rows + bottom padding (2)
+local visibleH = 2
+if rowsToShow > 0 then
+    visibleH = visibleH + (rowsToShow * ROW_HEIGHT) + ((rowsToShow - 1) * PADDING)
 end
+visibleH = visibleH + 2
+
+objs.background.Size = newUDim2(1, -6, 0, visibleH)
+
+-- expose for scroll wheel logic
+self.rowsVisible = rowsVisible
+self.totalValues = #ordered
+end
+
 
 window.dropdown:Refresh()
 end
