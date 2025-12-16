@@ -1882,7 +1882,7 @@ self.rowsVisible = rowsVisible
 self.totalValues = #ordered
 
 -- =========================
--- Visual scrollbar update (thumb moves + scales)
+-- Visual scrollbar update (LOCAL positioning)
 -- =========================
 do
     local sb = objs.scroll
@@ -1900,36 +1900,35 @@ do
         sb.thumbBot.Visible = needScroll
 
         if needScroll then
-            local bgSize = objs.background.Object.Size      -- Vector2
-            local bgPos  = objs.background.Object.Position  -- Vector2
+            local bgSize = objs.background.Object.Size -- Vector2 (actual drawn size)
 
-            local padTop, padBot = 4, 4
+            local padTop = 4
+            local padBot = 4
             local trackH = math.max(8, bgSize.Y - padTop - padBot)
 
-            local x  = bgPos.X + bgSize.X - 7  -- right side inside dropdown
-            local y0 = bgPos.Y + padTop
+            -- X is local: right side inside dropdown
+            local xOff = bgSize.X - 7  -- trackMid width=4
 
-            -- Track (pill)
-            sb.trackMid.Position = newUDim2(0, x, 0, y0 + 2)
+            -- Track (pill) - all LOCAL coords
+            sb.trackMid.Position = newUDim2(0, xOff, 0, padTop + 2)
             sb.trackMid.Size     = newUDim2(0, 4, 0, trackH - 4)
-            sb.trackTop.Position = Vector2.new(x + 2, y0 + 2)
-            sb.trackBot.Position = Vector2.new(x + 2, y0 + trackH - 2)
 
-            -- Thumb size based on visible/total
+            sb.trackTop.Position = Vector2.new(xOff + 2, padTop + 2)
+            sb.trackBot.Position = Vector2.new(xOff + 2, padTop + trackH - 2)
+
+            -- Thumb sizing/position
             local ratio  = math.clamp(vis / math.max(total, 1), 0, 1)
             local thumbH = math.floor(math.max(16, trackH * ratio))
-            thumbH = math.min(thumbH, trackH)
 
-            -- Thumb position based on scrollIndex/maxScrollIndex
             local maxIdx = math.max(self.maxScrollIndex or 0, 1)
             local t = (self.scrollIndex or 0) / maxIdx
-            local thumbY = y0 + math.floor((trackH - thumbH) * t)
+            local thumbY = padTop + math.floor((trackH - thumbH) * t)
 
-            -- Thumb (pill)
-            sb.thumbMid.Position = newUDim2(0, x, 0, thumbY + 2)
+            sb.thumbMid.Position = newUDim2(0, xOff, 0, thumbY + 2)
             sb.thumbMid.Size     = newUDim2(0, 4, 0, math.max(0, thumbH - 4))
-            sb.thumbTop.Position = Vector2.new(x + 2, thumbY + 2)
-            sb.thumbBot.Position = Vector2.new(x + 2, thumbY + thumbH - 2)
+
+            sb.thumbTop.Position = Vector2.new(xOff + 2, thumbY + 2)
+            sb.thumbBot.Position = Vector2.new(xOff + 2, thumbY + thumbH - 2)
         end
     end
 end
