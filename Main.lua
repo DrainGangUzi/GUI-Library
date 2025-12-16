@@ -1930,8 +1930,7 @@ do
         end
     end
 end
-
-
+end
 window.dropdown:Refresh()
 end
         -------------------------
