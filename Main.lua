@@ -632,26 +632,28 @@ function library:init()
     end)
 
     utility:Connection(inputservice.InputChanged, function(input, gpe)
-    if input.UserInputType == Enum.UserInputType.MouseWheel and library.open then
-        for _, win in next, library.windows do
-            local dd = win.dropdown
-            if dd and dd.selected and dd.objects and dd.objects.background.Visible then
-                if utility:MouseOver(dd.objects.background.Object) then
-                    -- use row index, not pixels
-                    local dir = input.Position.Z -- +1 up, -1 down
-                    local idx = (dd.scrollIndex or 0) - dir
+    if input.UserInputType ~= Enum.UserInputType.MouseWheel then return end
+    if not library.open then return end
 
-                    local maxIdx = dd.maxScrollIndex or 0
-                    if idx < 0 then idx = 0 end
-                    if idx > maxIdx then idx = maxIdx end
+    for _, win in next, library.windows do
+        local dd = win.dropdown
+        if dd and dd.selected and dd.objects and dd.objects.background.Visible then
+            if utility:MouseOver(dd.objects.background.Object) then
+                -- scrollIndex-based scrolling (matches your Refresh version)
+                local dir = input.Position.Z -- +1 / -1
 
-                    dd.scrollIndex = idx
-                    dd:Refresh()
-                    break
-                end
+                dd.scrollIndex = dd.scrollIndex or 0
+                dd.maxScrollIndex = dd.maxScrollIndex or 0
+
+                dd.scrollIndex = math.clamp(dd.scrollIndex - dir, 0, dd.maxScrollIndex)
+
+                dd:Refresh()
+                break
             end
         end
     end
+end)
+
 
         if input.UserInputType == Enum.UserInputType.MouseMovement then
             if library.open then
@@ -688,7 +690,6 @@ function library:init()
                 end
             end
         end
-    end)
     
     function self:SetOpen(bool)
     self.open = bool;
@@ -1880,6 +1881,7 @@ objs.background.Size = newUDim2(1, -6, 0, visibleH)
 -- expose for scroll wheel logic
 self.rowsVisible = rowsVisible
 self.totalValues = #ordered
+self.maxScrollIndex = math.max(#ordered - rowsVisible, 0)
 
 -- =========================
 -- Visual scrollbar update (LOCAL positioning)
