@@ -1646,83 +1646,147 @@ end
                     Parent = objs.border2;
                 })
 
-            end
-
-            
-function window.dropdown:Refresh()
-    if not self.selected then return end
-
-    local list  = self.selected
-    local objs  = self.objects
-
-    local VIEW_HEIGHT   = 180
-    local PADDING       = 2
-    local ROW_HEIGHT    = 18
-
-    --------------------------------------------------------------------
-    -- BUILD CLEAN, ORDERED VALUE ARRAY
-    --------------------------------------------------------------------
-    local ordered = {}
-
-    -- copy values into a dense array
-    for _, v in pairs(list.values) do
-        if v ~= nil then
-            table.insert(ordered, v)
-        end
-    end
-
-    -- alphabetical (you liked this)
-    table.sort(ordered, function(a, b)
-        return tostring(a):lower() < tostring(b):lower()
-    end)
-
-    --------------------------------------------------------------------
-    -- SCROLL INDEX (INTEGER, NOT PIXELS)
-    --------------------------------------------------------------------
-    local rowsVisible = math.floor((VIEW_HEIGHT - 2) / (ROW_HEIGHT + PADDING))
-    if rowsVisible < 1 then rowsVisible = 1 end
-
-    self.scrollIndex = self.scrollIndex or 0          -- 0-based
-    self.maxScrollIndex = math.max(#ordered - rowsVisible, 0)
-
-    if self.scrollIndex > self.maxScrollIndex then
-        self.scrollIndex = self.maxScrollIndex
-    elseif self.scrollIndex < 0 then
-        self.scrollIndex = 0
-    end
-
-    objs.values = objs.values or {}
-
-    --------------------------------------------------------------------
-    -- ENSURE ROW OBJECTS (ONE PER VISIBLE SLOT)
-    --------------------------------------------------------------------
-    for slot = 1, rowsVisible do
-        local row = objs.values[slot]
-
-        if not row then
-            row = {}
-            row.background = utility:Draw("Square", {
-                Size        = newUDim2(1, -4, 0, ROW_HEIGHT),
-                Position    = newUDim2(0, 2, 0, 2 + (slot - 1) * (ROW_HEIGHT + PADDING)),
-                Color       = Color3.new(.25, .25, .25),
-                Transparency= 0,
-                ZIndex      = library.zindexOrder.dropdown + 1,
-                Parent      = objs.background
-            })
-
-            row.text = utility:Draw("Text", {
-                Position    = newUDim2(0, 3, 0, 1),
-                ThemeColor  = "Option Text 2",
-                Text        = "",
-                Size        = 13,
-                Font        = 2,
-                ZIndex      = library.zindexOrder.dropdown + 2,
-                Parent      = row.background
-            })
-
-            objs.values[slot] = row
-        end
-    end
+                -- Scrollbar (pure visual)
+                objs.scroll = {}
+                
+                -- track (pill)
+                objs.scroll.trackMid = utility:Draw("Square", {
+                    Size = newUDim2(0, 4, 1, -8),
+                    Position = newUDim2(1, -7, 0, 4),
+                    Color = Color3.fromRGB(55,55,55),
+                    Transparency = 0.35,
+                    ZIndex = z + 2,
+                    Parent = objs.background,
+                    Visible = false,
+                })
+                
+                objs.scroll.trackTop = utility:Draw("Circle", {
+                    Radius = 2,
+                    Filled = true,
+                    Color = Color3.fromRGB(55,55,55),
+                    Transparency = 0.35,
+                    ZIndex = z + 2,
+                    Parent = objs.background,
+                    Visible = false,
+                })
+                
+                objs.scroll.trackBot = utility:Draw("Circle", {
+                    Radius = 2,
+                    Filled = true,
+                    Color = Color3.fromRGB(55,55,55),
+                    Transparency = 0.35,
+                    ZIndex = z + 2,
+                    Parent = objs.background,
+                    Visible = false,
+                })
+                
+                -- thumb (pill)
+                objs.scroll.thumbMid = utility:Draw("Square", {
+                    Size = newUDim2(0, 4, 0, 20),
+                    Position = newUDim2(1, -7, 0, 4),
+                    Color = Color3.fromRGB(140,140,140),
+                    Transparency = 0.0,
+                    ZIndex = z + 3,
+                    Parent = objs.background,
+                    Visible = false,
+                })
+                
+                objs.scroll.thumbTop = utility:Draw("Circle", {
+                    Radius = 2,
+                    Filled = true,
+                    Color = Color3.fromRGB(140,140,140),
+                    Transparency = 0.0,
+                    ZIndex = z + 3,
+                    Parent = objs.background,
+                    Visible = false,
+                })
+                
+                objs.scroll.thumbBot = utility:Draw("Circle", {
+                    Radius = 2,
+                    Filled = true,
+                    Color = Color3.fromRGB(140,140,140),
+                    Transparency = 0.0,
+                    ZIndex = z + 3,
+                    Parent = objs.background,
+                    Visible = false,
+                })
+                
+                 end
+                           
+                function window.dropdown:Refresh()
+                    if not self.selected then return end
+                
+                    local list  = self.selected
+                    local objs  = self.objects
+                
+                    local VIEW_HEIGHT   = 180
+                    local PADDING       = 2
+                    local ROW_HEIGHT    = 18
+                
+                    --------------------------------------------------------------------
+                    -- BUILD CLEAN, ORDERED VALUE ARRAY
+                    --------------------------------------------------------------------
+                    local ordered = {}
+                
+                    -- copy values into a dense array
+                    for _, v in pairs(list.values) do
+                        if v ~= nil then
+                            table.insert(ordered, v)
+                        end
+                    end
+                
+                    -- alphabetical (you liked this)
+                    table.sort(ordered, function(a, b)
+                        return tostring(a):lower() < tostring(b):lower()
+                    end)
+                
+                    --------------------------------------------------------------------
+                    -- SCROLL INDEX (INTEGER, NOT PIXELS)
+                    --------------------------------------------------------------------
+                    local rowsVisible = math.floor((VIEW_HEIGHT - 2) / (ROW_HEIGHT + PADDING))
+                    if rowsVisible < 1 then rowsVisible = 1 end
+                
+                    self.scrollIndex = self.scrollIndex or 0          -- 0-based
+                    self.maxScrollIndex = math.max(#ordered - rowsVisible, 0)
+                
+                    if self.scrollIndex > self.maxScrollIndex then
+                        self.scrollIndex = self.maxScrollIndex
+                    elseif self.scrollIndex < 0 then
+                        self.scrollIndex = 0
+                    end
+                
+                    objs.values = objs.values or {}
+                
+                    --------------------------------------------------------------------
+                    -- ENSURE ROW OBJECTS (ONE PER VISIBLE SLOT)
+                    --------------------------------------------------------------------
+                    for slot = 1, rowsVisible do
+                        local row = objs.values[slot]
+                
+                        if not row then
+                            row = {}
+                            row.background = utility:Draw("Square", {
+                                Size        = newUDim2(1, -4, 0, ROW_HEIGHT),
+                                Position    = newUDim2(0, 2, 0, 2 + (slot - 1) * (ROW_HEIGHT + PADDING)),
+                                Color       = Color3.new(.25, .25, .25),
+                                Transparency= 0,
+                                ZIndex      = library.zindexOrder.dropdown + 1,
+                                Parent      = objs.background
+                            })
+                
+                            row.text = utility:Draw("Text", {
+                                Position    = newUDim2(0, 3, 0, 1),
+                                ThemeColor  = "Option Text 2",
+                                Text        = "",
+                                Size        = 13,
+                                Font        = 2,
+                                ZIndex      = library.zindexOrder.dropdown + 2,
+                                Parent      = row.background
+                            })
+                
+                            objs.values[slot] = row
+                        end
+                    end
 
     --------------------------------------------------------------------
     -- UPDATE ROWS FOR CURRENT SCROLL SLICE
@@ -1805,7 +1869,6 @@ function window.dropdown:Refresh()
 --------------------------------------------------------------------
 local rowsToShow = math.min(rowsVisible, #ordered)
 
--- Top padding (2) + rows + padding between rows + bottom padding (2)
 local visibleH = 2
 if rowsToShow > 0 then
     visibleH = visibleH + (rowsToShow * ROW_HEIGHT) + ((rowsToShow - 1) * PADDING)
@@ -1817,8 +1880,32 @@ objs.background.Size = newUDim2(1, -6, 0, visibleH)
 -- expose for scroll wheel logic
 self.rowsVisible = rowsVisible
 self.totalValues = #ordered
-end
 
+--------------------------------------------------------------------
+-- SCROLLBAR VISUAL UPDATE (PASTE HERE)
+--------------------------------------------------------------------
+if objs.scrollbar then
+    if self.totalValues > self.rowsVisible then
+        objs.scrollbar.Visible = true
+
+        local trackH = visibleH - 4
+        local thumbH = math.max(
+            (self.rowsVisible / self.totalValues) * trackH,
+            12
+        )
+
+        local maxIndex = math.max(self.totalValues - self.rowsVisible, 1)
+        local alpha = self.scrollIndex / maxIndex
+
+        objs.scrollbar.Size = newUDim2(0, 4, 0, thumbH)
+        objs.scrollbar.Position = newUDim2(
+            1, -6,
+            0, 2 + alpha * (trackH - thumbH)
+        )
+    else
+        objs.scrollbar.Visible = false
+    end
+end
 
 window.dropdown:Refresh()
 end
