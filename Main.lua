@@ -1881,32 +1881,56 @@ objs.background.Size = newUDim2(1, -6, 0, visibleH)
 self.rowsVisible = rowsVisible
 self.totalValues = #ordered
 
---------------------------------------------------------------------
--- SCROLLBAR VISUAL UPDATE (PASTE HERE)
---------------------------------------------------------------------
-if objs.scrollbar then
-    if self.totalValues > self.rowsVisible then
-        objs.scrollbar.Visible = true
+-- =========================
+-- Visual scrollbar update (pure visual)
+-- =========================
+do
+    local sb = objs.scroll
+    if sb then
+        local needScroll = (self.totalValues or 0) > (self.rowsVisible or 0)
 
-        local trackH = visibleH - 4
-        local thumbH = math.max(
-            (self.rowsVisible / self.totalValues) * trackH,
-            12
-        )
+        sb.trackMid.Visible = needScroll
+        sb.trackTop.Visible = needScroll
+        sb.trackBot.Visible = needScroll
+        sb.thumbMid.Visible = needScroll
+        sb.thumbTop.Visible = needScroll
+        sb.thumbBot.Visible = needScroll
 
-        local maxIndex = math.max(self.totalValues - self.rowsVisible, 1)
-        local alpha = self.scrollIndex / maxIndex
+        if needScroll then
+            local bgSize = objs.background.Object.Size
 
-        objs.scrollbar.Size = newUDim2(0, 4, 0, thumbH)
-        objs.scrollbar.Position = newUDim2(
-            1, -6,
-            0, 2 + alpha * (trackH - thumbH)
-        )
-    else
-        objs.scrollbar.Visible = false
+            local padTop, padBot = 4, 4
+            local trackH = math.max(1, bgSize.Y - padTop - padBot)
+
+            -- inside dropdown (relative)
+            local x = bgSize.X - 7
+            local cx = x + 2
+            local y0 = padTop
+
+            -- track pill
+            sb.trackMid.Position = newUDim2(0, x, 0, y0 + 2)
+            sb.trackMid.Size     = newUDim2(0, 4, 0, trackH - 4)
+            sb.trackTop.Position = Vector2.new(cx, y0 + 2)
+            sb.trackBot.Position = Vector2.new(cx, y0 + trackH - 2)
+
+            -- thumb pill
+            local total = math.max(self.totalValues or 1, 1)
+            local vis   = math.max(self.rowsVisible or 1, 1)
+            local ratio = math.clamp(vis / total, 0, 1)
+
+            local thumbH = math.floor(math.max(16, trackH * ratio))
+            local maxIdx = math.max(self.maxScrollIndex or 0, 1)
+            local t = (self.scrollIndex or 0) / maxIdx
+            local thumbY = y0 + math.floor((trackH - thumbH) * t)
+
+            sb.thumbMid.Position = newUDim2(0, x, 0, thumbY + 2)
+            sb.thumbMid.Size     = newUDim2(0, 4, 0, math.max(0, thumbH - 4))
+            sb.thumbTop.Position = Vector2.new(cx, thumbY + 2)
+            sb.thumbBot.Position = Vector2.new(cx, thumbY + thumbH - 2)
+        end
     end
-  end
 end
+
 
 window.dropdown:Refresh()
 end
