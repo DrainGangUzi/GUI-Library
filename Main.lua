@@ -632,29 +632,31 @@ function library:init()
     end)
 
     utility:Connection(inputservice.InputChanged, function(input, gpe)
-        if not input then return end
-    if input.UserInputType == Enum.UserInputType.MouseWheel and library.open then
+    if not input then return end
+    if gpe then return end
+    if not library.open then return end
+
+    if input.UserInputType == Enum.UserInputType.MouseWheel then
         for _, win in next, library.windows do
             local dd = win.dropdown
-            if dd and dd.selected and dd.objects and dd.objects.background.Visible then
+            if dd and dd.selected and dd.objects and dd.objects.background and dd.objects.background.Visible then
                 if utility:MouseOver(dd.objects.background.Object) then
-                    -- use row index, not pixels
-                    local dir = input.Position.Z
-                    dd.scrollIndex = math.clamp((dd.scrollIndex or 0) - dir, 0, dd.maxScrollIndex or 0)
-                    dd:Refresh()
+                    local dir = input.Position.Z -- +1 or -1
 
+                    dd.scrollIndex = dd.scrollIndex or 0
+                    dd.maxScrollIndex = dd.maxScrollIndex or 0
 
-                    local maxIdx = dd.maxScrollIndex or 0
-                    if idx < 0 then idx = 0 end
-                    if idx > maxIdx then idx = maxIdx end
-
-                    dd.scrollIndex = idx
-                    dd:Refresh()
+                    if dd.maxScrollIndex > 0 then
+                        dd.scrollIndex = math.clamp(dd.scrollIndex - dir, 0, dd.maxScrollIndex)
+                        dd:Refresh()
+                    end
                     break
                 end
             end
         end
     end
+end)
+
 
         if input.UserInputType == Enum.UserInputType.MouseMovement then
             if library.open then
@@ -687,12 +689,9 @@ function library:init()
                         local val = utility:ConvertNumberRange(rel.X, 0 , library.draggingSlider.objects.background.Object.Size.X, library.draggingSlider.min, library.draggingSlider.max);
                         library.draggingSlider:SetValue(val)
                     end
-
                 end
             end
         end
-    end)
-    
     function self:SetOpen(bool)
     self.open = bool;
     screenGui.Enabled = bool;
@@ -1880,9 +1879,10 @@ visibleH = visibleH + 2
 
 objs.background.Size = newUDim2(1, -6, 0, visibleH)
 
--- expose counts for scrollbar + wheel
+-- expose counts for wheel + scrollbar
 self.rowsVisible = rowsVisible
 self.totalValues = #ordered
+self.maxScrollIndex = math.max(#ordered - rowsVisible, 0)
 
 -- =========================
 -- Visual scrollbar update (RELATIVE to dropdown background)
@@ -1890,7 +1890,7 @@ self.totalValues = #ordered
 do
     local sb = objs.scroll
     if sb then
-        local needScroll = (self.totalValues or 0) > (self.rowsVisible or 0)
+        local needScroll = (self.totalValues > self.rowsVisible)
 
         sb.trackMid.Visible = needScroll
         sb.trackTop.Visible = needScroll
@@ -1903,30 +1903,29 @@ do
             local bgSize = objs.background.Object.Size
 
             local padTop, padBot = 4, 4
-            local trackH = math.max(1, (bgSize.Y - padTop - padBot))
+            local trackH = math.max(8, (bgSize.Y - padTop - padBot))
 
-            -- IMPORTANT: positions are RELATIVE to objs.background
             local x  = bgSize.X - 7
             local y0 = padTop
 
-            -- Track (pill)
+            -- track
             sb.trackMid.Position = newUDim2(0, x, 0, y0 + 2)
             sb.trackMid.Size     = newUDim2(0, 4, 0, trackH - 4)
 
             sb.trackTop.Position = newUDim2(0, x + 2, 0, y0 + 2)
             sb.trackBot.Position = newUDim2(0, x + 2, 0, y0 + trackH - 2)
 
-            -- Thumb size/pos based on scrollIndex
-            local total = self.totalValues or 1
-            local vis   = self.rowsVisible or 1
-            local ratio = math.clamp(vis / math.max(total, 1), 0, 1)
+            -- thumb size/pos
+            local total = math.max(self.totalValues, 1)
+            local vis   = math.max(self.rowsVisible, 1)
 
-            local thumbH = math.floor(math.max(16, (trackH * ratio)))
-            local maxIdx = math.max(self.maxScrollIndex or 0, 1)
+            local ratio = math.clamp(vis / total, 0, 1)
+            local thumbH = math.floor(math.max(16, trackH * ratio))
+
+            local maxIdx = math.max(self.maxScrollIndex, 1)
             local t = (self.scrollIndex or 0) / maxIdx
             local thumbY = y0 + math.floor((trackH - thumbH) * t)
 
-            -- Thumb (pill)
             sb.thumbMid.Position = newUDim2(0, x, 0, thumbY + 2)
             sb.thumbMid.Size     = newUDim2(0, 4, 0, math.max(0, thumbH - 4))
 
